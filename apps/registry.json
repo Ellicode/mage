@@ -1,0 +1,9 @@
+{
+    "installedApps": [
+        "com.ellicode.weather",
+        "com.ellicode.music",
+        "com.ellicode.timer"
+    ],
+
+    "permissions": {}
+}

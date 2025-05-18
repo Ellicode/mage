@@ -1,0 +1,29 @@
+{
+    "name": "Timer",
+    "description": "A simple timer application that allows users to set and track countdowns.",
+    "version": "1.0.0",
+    "author": "Ellicode",
+    "appScheme": "com.ellicode.timer",
+    "icon": {
+        "type": "lucide-icon",
+        "name": "Clock",
+        "color": "#f0b100"
+    },
+    "intents": [
+        {
+            "name": "Timer",
+            "type": "menu",
+            "description": "Set and manage timers",
+            "src": "@/TimerApp.vue",
+            "intentScheme": "com.ellicode.timer.setTimer",
+            "aliases": [
+                "timer",
+                "countdown",
+                "clock",
+                "alarm",
+                "stopwatch",
+                "remind"
+            ]
+        }
+    ]
+}

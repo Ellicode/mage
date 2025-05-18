@@ -1,0 +1,30 @@
+{
+    "name": "Weather",
+    "description": "A simple weather application that fetches data from a weather API and displays it to the user.",
+    "version": "1.0.0",
+    "author": "Ellicode",
+    "appScheme": "com.ellicode.weather",
+    "icon": {
+        "type": "lucide-icon",
+        "name": "CloudSun",
+        "color": "#00a6f4"
+    },
+    "intents": [
+        {
+            "name": "Weather",
+            "type": "menu",
+            "description": "Fetches the current weather for a given location.",
+            "src": "@/WeatherApp.vue",
+            "intentScheme": "com.ellicode.weather.getCurrentWeather",
+            "aliases": ["temperature", "conditions", "weather", "forecast"]
+        },
+        {
+            "name": "Weather widget",
+            "type": "widget",
+            "description": "A widget that displays the current weather for a given location.",
+            "src": "@/WeatherWidget.vue",
+            "intentScheme": "com.ellicode.weather.widget",
+            "aliases": ["temperature", "conditions", "weather", "forecast"]
+        }
+    ]
+}

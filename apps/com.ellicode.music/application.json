@@ -1,0 +1,22 @@
+{
+    "name": "Music",
+    "description": "A simple music application that fetches data from a music API and displays it to the user.",
+    "version": "1.0.0",
+    "author": "Ellicode",
+    "appScheme": "com.ellicode.music",
+    "icon": {
+        "type": "lucide-icon",
+        "name": "Music",
+        "color": "#ff2056"
+    },
+    "intents": [
+        {
+            "name": "Music",
+            "type": "menu",
+            "description": "Play smooth music",
+            "src": "@/MusicApp.vue",
+            "intentScheme": "com.ellicode.music.getCurrentWeather",
+            "aliases": ["music", "play", "audio", "song", "band", "playlist"]
+        }
+    ]
+}
