@@ -74,6 +74,10 @@ const executeIntent = (intent: Intent) => {
             activeIntent.value = intent;
             page.value = "application"; // Set the page to 1 when a menu is opened
         });
+    } else if (intent.type === "openApp") {
+        window.ipcRenderer.send("open-app", {
+            appPath: intent.appPath,
+        });
     }
 };
 
@@ -420,6 +424,14 @@ const alertType = ref<
                                         class="w-4 h-4 text-white"
                                     />
                                 </div>
+                                <img
+                                    class="w-7 h-7"
+                                    v-else-if="
+                                        result.application?.icon.type ===
+                                        'image'
+                                    "
+                                    :src="result.application.icon.value"
+                                />
                             </template>
                             <template #append>
                                 <div

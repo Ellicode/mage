@@ -1,10 +1,19 @@
-import { app, BrowserWindow, shell, ipcMain, globalShortcut } from "electron";
+import {
+    app,
+    BrowserWindow,
+    shell,
+    ipcMain,
+    globalShortcut,
+    nativeImage,
+} from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import os from "node:os";
 import { readFileSync } from "node:fs";
 import { getInstalledApps } from "get-installed-apps";
+import fs from "node:fs";
+import { exec } from "child_process";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -48,7 +57,6 @@ const indexHtml = path.join(RENDERER_DIST, "index.html");
 let isMenuOpen = false;
 
 import { BackgroundProcess } from "../../kit/process";
-
 // Array to store all background processes
 let currentProcesses: BackgroundProcess[] = [];
 let nextProcessId = 1;
@@ -84,6 +92,32 @@ interface InstalledApp {
     VersionMajor?: string;
     VersionMinor?: string;
     EstimatedSize?: string;
+}
+
+// Add a proper shutdown function
+function cleanupAndExit() {
+    // Unregister all global shortcuts
+    globalShortcut.unregisterAll();
+
+    // Clean up all background processes
+    for (const process of currentProcesses) {
+        if (process.active && typeof process.pause === "function") {
+            try {
+                process.pause();
+            } catch (err) {
+                console.error(`Error pausing process ${process.id}:`, err);
+            }
+        }
+    }
+
+    // Clear the processes array
+    currentProcesses = [];
+
+    // Close all windows
+    if (win !== null) {
+        win.removeAllListeners();
+        win = null;
+    }
 }
 
 async function createWindow() {
@@ -124,24 +158,117 @@ async function createWindow() {
         );
 
         // Get installed apps
+        getInstalledApps()
+            .then(async (apps: []) => {
+                const appPromises = apps.map(
+                    async (application: InstalledApp) => {
+                        const name =
+                            application.DisplayName || application.appName;
+                        const publisher =
+                            application.Publisher || application.appPublisher;
+                        const version =
+                            application.DisplayVersion ||
+                            application.appVersion;
+                        const identifier = application.appIdentifier;
+                        let path = null; // Initialize as null by default
+                        if (application.DisplayIcon) {
+                            path = application.DisplayIcon.split(",")[0].trim();
+                        } else if (application.InstallLocation) {
+                            // Try to find executable file in InstallLocation
+                            // List of common executable extensions to check
+                            const exeExtensions = [
+                                ".exe",
+                                ".com",
+                                ".bat",
+                                ".cmd",
+                            ];
 
-        getInstalledApps().then((apps: []) => {
-            installedApps = apps.map((app: InstalledApp) => {
-                const name = app.DisplayName || app.appName;
-                const publisher = app.Publisher || app.appPublisher;
-                const version = app.DisplayVersion || app.appVersion;
-                const identifier = app.appIdentifier;
-                const path = app.DisplayIcon;
+                            // Try to find a file with executable extension directly in the InstallLocation
+                            try {
+                                const files = fs.readdirSync(
+                                    application.InstallLocation
+                                );
+                                // Filter for executable files that don't contain banned words
+                                const executableFiles = files.filter((file) => {
+                                    const ext = path
+                                        .extname(file)
+                                        .toLowerCase();
+                                    const fileName = file.toLowerCase();
+                                    return (
+                                        exeExtensions.includes(ext) &&
+                                        !fileName.includes("uninstall") &&
+                                        !fileName.includes("setup") &&
+                                        !fileName.includes("update")
+                                    );
+                                });
 
-                return {
-                    name,
-                    publisher,
-                    version,
-                    identifier,
-                    path,
-                };
+                                // Use the first valid executable found
+                                if (executableFiles.length > 0) {
+                                    path = path
+                                        .join(
+                                            application.InstallLocation,
+                                            executableFiles[0]
+                                        )
+                                        .split(",")[0]
+                                        .trim();
+                                }
+                            } catch (error) {
+                                console.error(
+                                    `Error finding executable for ${
+                                        application.DisplayName ||
+                                        application.appName
+                                    }:`,
+                                    error
+                                );
+                            }
+                        }
+
+                        // Create an app icon as base64 if path exists
+                        let appIcon = null;
+                        if (path) {
+                            try {
+                                // Use optional electron API for extracting icons from executables
+                                // This is more reliable than just linking to the executable
+                                const icon = await app.getFileIcon(path, {
+                                    size: "normal",
+                                });
+                                const iconData = icon
+                                    .toPNG()
+                                    .toString("base64");
+                                appIcon = `data:image/png;base64,${iconData}`;
+                            } catch (error) {
+                                console.error(
+                                    `Failed to extract icon from ${path}:`,
+                                    error
+                                );
+                                // Fallback to file URL if icon extraction fails
+                                appIcon = `file://${path.split(",")[0].trim()}`;
+                            }
+                        } else {
+                            return null; // Skip if no path is found
+                        }
+
+                        return {
+                            name,
+                            publisher,
+                            version,
+                            identifier,
+                            path,
+                            appIcon,
+                        };
+                    }
+                );
+
+                // Wait for all promises to resolve and filter out null values
+                installedApps = (await Promise.all(appPromises)).filter(
+                    (app) => app !== null
+                );
+                console.log("Installed Apps:", installedApps);
+            })
+            .catch((error) => {
+                console.error("Error getting installed apps:", error);
+                installedApps = [];
             });
-        });
     });
 
     // Prevent Escape key from closing the window
@@ -161,60 +288,122 @@ async function createWindow() {
         }
     });
     ipcMain.on("ui-toggle-menu", (event, arg) => {
-        console.log("Toggle menu", arg);
         isMenuOpen = arg;
         win.setIgnoreMouseEvents(!isMenuOpen, { forward: true });
     });
 
     ipcMain.handle("search", async (event, arg) => {
-        const registry = readFileSync(
-            path.join(process.env.APP_ROOT, "apps", "registry.json"),
-            "utf-8"
-        );
-        const data = JSON.parse(registry);
-        const allApps = data.installedApps.map((app: string) => {
-            const manifest = readFileSync(
-                path.join(
-                    process.env.APP_ROOT,
-                    "apps",
-                    app,
-                    "application.json"
-                ),
+        try {
+            const registry = readFileSync(
+                path.join(process.env.APP_ROOT, "apps", "registry.json"),
                 "utf-8"
             );
-            return JSON.parse(manifest);
-        });
-        let allIntents = [];
-        allApps.forEach((app) => {
-            allIntents = allIntents.concat(
-                app.intents.map((intent) => {
-                    // Destructure app to separate intents from other properties
-                    const { intents, ...appWithoutIntents } = app;
-                    return {
-                        application: appWithoutIntents,
-                        ...intent,
-                    };
+            const data = JSON.parse(registry);
+            const allApps = data.installedApps.map((app: string) => {
+                try {
+                    const manifest = readFileSync(
+                        path.join(
+                            process.env.APP_ROOT,
+                            "apps",
+                            app,
+                            "application.json"
+                        ),
+                        "utf-8"
+                    );
+                    return JSON.parse(manifest);
+                } catch (err) {
+                    console.error(
+                        `Error reading manifest for app ${app}:`,
+                        err
+                    );
+                    return { intents: [] }; // Return empty app on error
+                }
+            });
+            let allIntents = [];
+            allApps.forEach((app) => {
+                if (app.intents && Array.isArray(app.intents)) {
+                    allIntents = allIntents.concat(
+                        app.intents.map((intent) => {
+                            // Destructure app to separate intents from other properties
+                            const { intents, ...appWithoutIntents } = app;
+                            return {
+                                application: appWithoutIntents,
+                                ...intent,
+                            };
+                        })
+                    );
+                }
+            });
+
+            if (Array.isArray(installedApps)) {
+                installedApps.forEach((app) => {
+                    if (app && app.name) {
+                        // Destructure app to separate intents from other properties
+                        allIntents.push({
+                            application: {
+                                name: app.name,
+                                icon: {
+                                    type: "image",
+                                    value: app.appIcon,
+                                },
+                                appScheme: app.identifier,
+                            },
+                            type: "openApp",
+                            appPath: app.path,
+                            name: app.name,
+                            description: app.publisher,
+                            aliases: [app.name],
+                        });
+                    }
+                });
+            }
+
+            const returnData = allIntents
+                .filter((intent) => {
+                    // Check if the search matches the intent name
+                    const nameMatch = intent.name
+                        .toLowerCase()
+                        .includes(arg.toLowerCase());
+
+                    // Check if the search matches any of the aliases (if they exist)
+                    const aliasMatch =
+                        intent.aliases &&
+                        intent.aliases.some((alias: string) =>
+                            alias.toLowerCase().includes(arg.toLowerCase())
+                        );
+
+                    // Return true if either name or any alias matches
+                    return nameMatch || aliasMatch;
                 })
-            );
-        });
+                .slice(0, 5); // Limit to 5 results
 
-        const returnData = allIntents.filter((intent) => {
-            // Check if the search matches the intent name
-            const nameMatch = intent.name
-                .toLowerCase()
-                .includes(arg.toLowerCase());
+            return returnData;
+        } catch (err) {
+            console.error("Error in search handler:", err);
+            return []; // Return empty array on error
+        }
+    });
 
-            // Check if the search matches any of the aliases (if they exist)
-            const aliasMatch =
-                intent.aliases &&
-                intent.aliases.some((alias: string) =>
-                    alias.toLowerCase().includes(arg.toLowerCase())
-                );
-
-            // Return true if either name or any alias matches
-            return nameMatch || aliasMatch;
-        });
-        return returnData;
+    ipcMain.on("open-app", (event, arg) => {
+        const executablePath = arg.appPath;
+        if (executablePath) {
+            try {
+                exec(`"${executablePath}"`, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`Error opening application: ${error}`);
+                        return;
+                    }
+                    if (stderr) {
+                        console.error(`Application stderr: ${stderr}`);
+                    }
+                    if (stdout) {
+                        console.log(`Application stdout: ${stdout}`);
+                    }
+                });
+            } catch (error) {
+                console.error("Failed to open application:", error);
+            }
+        }
     });
 
     // Make all links open with the browser, not with the application
@@ -229,8 +418,8 @@ app.whenReady()
     .then(() => {
         globalShortcut.register("Alt+CommandOrControl+Space", () => {
             isMenuOpen = !isMenuOpen;
-            win.setIgnoreMouseEvents(!isMenuOpen, { forward: true });
             if (win) {
+                win.setIgnoreMouseEvents(!isMenuOpen, { forward: true });
                 win.webContents.send("toggle-menu", isMenuOpen);
                 win.focus();
             }
@@ -239,7 +428,7 @@ app.whenReady()
     .then(createWindow);
 
 app.on("window-all-closed", () => {
-    win = null;
+    cleanupAndExit();
     if (process.platform !== "darwin") app.quit();
 });
 
@@ -258,6 +447,14 @@ app.on("activate", () => {
     } else {
         createWindow();
     }
+});
+
+app.on("will-quit", () => {
+    cleanupAndExit();
+});
+
+app.on("quit", () => {
+    cleanupAndExit();
 });
 
 // Background process management handlers

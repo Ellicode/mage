@@ -269,16 +269,21 @@ const filteredSongs = computed(() => {
             class="h-8 w-8 rounded-full cursor-pointer transition-all active:bg-neutral-700 active:scale-95 hover:bg-neutral-800 flex items-center justify-center"
             @click="rewind"
         >
-            <Rewind class="w-5 h-5" />
+            <Rewind fill="white" class="w-5 h-5" />
         </button>
         <button
             class="h-8 w-8 rounded-full cursor-pointer transition-all active:bg-neutral-700 active:scale-95 hover:bg-neutral-800 flex items-center justify-center"
             @click="playpause"
         >
-            <Play v-if="currentAudio && currentAudio.paused" class="w-5 h-5" />
+            <Play
+                v-if="currentAudio && currentAudio.paused"
+                fill="white"
+                class="w-5 h-5"
+            />
             <Pause
                 v-else-if="currentAudio && !currentAudio.paused"
                 class="w-5 h-5"
+                fill="white"
             />
         </button>
     </div>
