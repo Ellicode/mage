@@ -17,14 +17,6 @@
             "src": "@/WeatherApp.vue",
             "intentScheme": "com.ellicode.weather.getCurrentWeather",
             "aliases": ["temperature", "conditions", "weather", "forecast"]
-        },
-        {
-            "name": "Weather widget",
-            "type": "widget",
-            "description": "A widget that displays the current weather for a given location.",
-            "src": "@/WeatherWidget.vue",
-            "intentScheme": "com.ellicode.weather.widget",
-            "aliases": ["temperature", "conditions", "weather", "forecast"]
         }
     ]
 }

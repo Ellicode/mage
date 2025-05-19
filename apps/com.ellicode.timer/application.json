@@ -24,6 +24,14 @@
                 "stopwatch",
                 "remind"
             ]
+        },
+        {
+            "name": "Clock",
+            "type": "widget",
+            "description": "A widget that displays the current time and date.",
+            "src": "@/ClockWidget.vue",
+            "aliases": ["current time", "date", "time", "clock", "now"],
+            "minQueryLength": 3
         }
     ]
 }

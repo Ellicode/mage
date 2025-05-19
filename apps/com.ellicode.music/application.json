@@ -16,7 +16,12 @@
             "description": "Play smooth music",
             "src": "@/MusicApp.vue",
             "intentScheme": "com.ellicode.music.getCurrentWeather",
-            "aliases": ["music", "play", "audio", "song", "band", "playlist"]
+            "aliases": ["music", "play", "audio", "song", "band", "playlist"],
+            "regexPatterns": [
+                "^music\\s+player$",
+                "^play\\s+(.+)\\s+music$",
+                "^listen\\s+to\\s+.+$"
+            ]
         }
     ]
 }

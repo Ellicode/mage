@@ -1,0 +1,29 @@
+{
+    "name": "Calculator",
+    "description": "A simple calculator application that performs basic arithmetic operations.",
+    "version": "1.0.0",
+    "author": "Ellicode",
+    "appScheme": "com.ellicode.calculator",
+    "icon": {
+        "type": "lucide-icon",
+        "name": "Calculator",
+        "color": "#737373"
+    },
+    "intents": [
+        {
+            "name": "Calculator",
+            "type": "widget",
+            "description": "A widget that performs basic arithmetic operations.",
+            "src": "@/CalculatorWidget.vue",
+            "regexPatterns": [
+                "^\\d+(\\.\\d+)?\\s*[+\\-*/^x]\\s*\\d+(\\.\\d+)?$",
+                "^(\\d+(\\.\\d+)?|pi|e)\\s*[+\\-*/^x]\\s*(\\d+(\\.\\d+)?|pi|e)$",
+                "^(sqrt|sin|cos|tan)\\(\\s*(\\d+(\\.\\d+)?|pi|e|[\\d\\.\\+\\-\\*/^x\\(\\)\\s]+)\\s*\\)$",
+                "^(\\d+(\\.\\d+)?|pi|e)\\s*([+\\-*/^x]\\s*(\\d+(\\.\\d+)?|pi|e))+$",
+                "^.*=.*$"
+            ],
+            "searchBy": ["regex"],
+            "minQueryLength": 2
+        }
+    ]
+}

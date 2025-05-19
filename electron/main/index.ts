@@ -8,15 +8,16 @@ import {
 } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import path from "node:path";
+import pathModule from "node:path";
 import os from "node:os";
 import { readFileSync } from "node:fs";
 import { getInstalledApps } from "get-installed-apps";
 import fs from "node:fs";
 import { exec } from "child_process";
+import process from "node:process";
 
 const require = createRequire(import.meta.url);
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = pathModule.dirname(fileURLToPath(import.meta.url));
 
 let installedApps = [];
 // The built directory structure
@@ -29,14 +30,14 @@ let installedApps = [];
 // ├─┬ dist
 // │ └── index.html    > Electron-Renderer
 //
-process.env.APP_ROOT = path.join(__dirname, "../..");
+process.env.APP_ROOT = pathModule.join(__dirname, "../..");
 
-export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
+export const MAIN_DIST = pathModule.join(process.env.APP_ROOT, "dist-electron");
+export const RENDERER_DIST = pathModule.join(process.env.APP_ROOT, "dist");
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
-    ? path.join(process.env.APP_ROOT, "public")
+    ? pathModule.join(process.env.APP_ROOT, "public")
     : RENDERER_DIST;
 
 // Disable GPU Acceleration for Windows 7
@@ -51,10 +52,14 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let win: BrowserWindow | null = null;
-const preload = path.join(__dirname, "../preload/index.mjs");
-const indexHtml = path.join(RENDERER_DIST, "index.html");
+const preload = pathModule.join(__dirname, "../preload/index.mjs");
+const indexHtml = pathModule.join(RENDERER_DIST, "index.html");
 
 let isMenuOpen = false;
+
+// Add tracking for app loading process
+let appLoadingInProgress = false;
+let appLoadAbortController = null;
 
 import { BackgroundProcess } from "../../kit/process";
 // Array to store all background processes
@@ -94,36 +99,102 @@ interface InstalledApp {
     EstimatedSize?: string;
 }
 
-// Add a proper shutdown function
-function cleanupAndExit() {
-    // Unregister all global shortcuts
-    globalShortcut.unregisterAll();
+// Add improved shutdown handling for development mode
+function handleDevModeShutdown() {
+    if (process.env.NODE_ENV === "development" || VITE_DEV_SERVER_URL) {
+        process.on("SIGTERM", () => {
+            console.log("Received SIGTERM signal, cleaning up...");
+            cleanupAndExit();
+            process.exit(0);
+        });
 
-    // Clean up all background processes
-    for (const process of currentProcesses) {
-        if (process.active && typeof process.pause === "function") {
+        process.on("SIGINT", () => {
+            console.log("Received SIGINT signal, cleaning up...");
+            cleanupAndExit();
+            process.exit(0);
+        });
+
+        process.on("exit", () => {
+            console.log("Process exiting, final cleanup...");
+            cleanupAndExit();
+        });
+
+        process.on("uncaughtException", (err) => {
+            console.error("Uncaught exception:", err);
+            cleanupAndExit();
+            process.exit(1);
+        });
+    }
+}
+
+// Enhance cleanup function to be more thorough
+function cleanupAndExit() {
+    console.log("Performing application cleanup...");
+
+    try {
+        // Abort any ongoing app loading
+        if (appLoadingInProgress && appLoadAbortController) {
+            console.log("Aborting in-progress app loading");
+            appLoadAbortController.abort();
+            appLoadingInProgress = false;
+            appLoadAbortController = null;
+        }
+
+        // Unregister all global shortcuts
+        globalShortcut.unregisterAll();
+        console.log("Global shortcuts unregistered");
+
+        // Clean up all background processes
+        currentProcesses.forEach((process) => {
             try {
-                process.pause();
+                if (process.active && typeof process.pause === "function") {
+                    process.pause();
+                }
             } catch (err) {
                 console.error(`Error pausing process ${process.id}:`, err);
             }
+        });
+        console.log(`${currentProcesses.length} background processes cleaned`);
+        currentProcesses = [];
+
+        // Destroy all windows properly
+        if (win !== null) {
+            console.log("Closing main window...");
+            try {
+                win.removeAllListeners();
+                win.webContents.removeAllListeners();
+                if (!win.isDestroyed()) {
+                    win.close();
+                }
+            } catch (error) {
+                console.error("Error closing window:", error);
+            }
+            win = null;
         }
-    }
 
-    // Clear the processes array
-    currentProcesses = [];
+        // Close any other windows
+        const allWindows = BrowserWindow.getAllWindows();
+        console.log(`Closing ${allWindows.length} additional windows...`);
+        allWindows.forEach((window) => {
+            try {
+                if (!window.isDestroyed()) {
+                    window.close();
+                }
+            } catch (error) {
+                console.error("Error closing extra window:", error);
+            }
+        });
 
-    // Close all windows
-    if (win !== null) {
-        win.removeAllListeners();
-        win = null;
+        console.log("Cleanup complete");
+    } catch (error) {
+        console.error("Error during cleanup:", error);
     }
 }
 
 async function createWindow() {
     win = new BrowserWindow({
         title: "Main window",
-        icon: path.join(process.env.VITE_PUBLIC, "favicon.ico"),
+        icon: pathModule.join(process.env.VITE_PUBLIC, "favicon.ico"),
         webPreferences: {
             preload,
             // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
@@ -157,123 +228,15 @@ async function createWindow() {
             new Date().toLocaleString()
         );
 
-        // Get installed apps
-        getInstalledApps()
-            .then(async (apps: []) => {
-                const appPromises = apps.map(
-                    async (application: InstalledApp) => {
-                        const name =
-                            application.DisplayName || application.appName;
-                        const publisher =
-                            application.Publisher || application.appPublisher;
-                        const version =
-                            application.DisplayVersion ||
-                            application.appVersion;
-                        const identifier = application.appIdentifier;
-                        let path = null; // Initialize as null by default
-                        if (application.DisplayIcon) {
-                            path = application.DisplayIcon.split(",")[0].trim();
-                        } else if (application.InstallLocation) {
-                            // Try to find executable file in InstallLocation
-                            // List of common executable extensions to check
-                            const exeExtensions = [
-                                ".exe",
-                                ".com",
-                                ".bat",
-                                ".cmd",
-                            ];
-
-                            // Try to find a file with executable extension directly in the InstallLocation
-                            try {
-                                const files = fs.readdirSync(
-                                    application.InstallLocation
-                                );
-                                // Filter for executable files that don't contain banned words
-                                const executableFiles = files.filter((file) => {
-                                    const ext = path
-                                        .extname(file)
-                                        .toLowerCase();
-                                    const fileName = file.toLowerCase();
-                                    return (
-                                        exeExtensions.includes(ext) &&
-                                        !fileName.includes("uninstall") &&
-                                        !fileName.includes("setup") &&
-                                        !fileName.includes("update")
-                                    );
-                                });
-
-                                // Use the first valid executable found
-                                if (executableFiles.length > 0) {
-                                    path = path
-                                        .join(
-                                            application.InstallLocation,
-                                            executableFiles[0]
-                                        )
-                                        .split(",")[0]
-                                        .trim();
-                                }
-                            } catch (error) {
-                                console.error(
-                                    `Error finding executable for ${
-                                        application.DisplayName ||
-                                        application.appName
-                                    }:`,
-                                    error
-                                );
-                            }
-                        }
-
-                        // Create an app icon as base64 if path exists
-                        let appIcon = null;
-                        if (path) {
-                            try {
-                                // Use optional electron API for extracting icons from executables
-                                // This is more reliable than just linking to the executable
-                                const icon = await app.getFileIcon(path, {
-                                    size: "normal",
-                                });
-                                const iconData = icon
-                                    .toPNG()
-                                    .toString("base64");
-                                appIcon = `data:image/png;base64,${iconData}`;
-                            } catch (error) {
-                                console.error(
-                                    `Failed to extract icon from ${path}:`,
-                                    error
-                                );
-                                // Fallback to file URL if icon extraction fails
-                                appIcon = `file://${path.split(",")[0].trim()}`;
-                            }
-                        } else {
-                            return null; // Skip if no path is found
-                        }
-
-                        return {
-                            name,
-                            publisher,
-                            version,
-                            identifier,
-                            path,
-                            appIcon,
-                        };
-                    }
-                );
-
-                // Wait for all promises to resolve and filter out null values
-                installedApps = (await Promise.all(appPromises)).filter(
-                    (app) => app !== null
-                );
-                console.log("Installed Apps:", installedApps);
-            })
-            .catch((error) => {
-                console.error("Error getting installed apps:", error);
-                installedApps = [];
-            });
+        // Get installed apps with better error handling and abortion capability
+        loadInstalledApps().catch((error) => {
+            console.error("Error in loadInstalledApps:", error);
+        });
     });
 
     // Prevent Escape key from closing the window
     win.webContents.on("before-input-event", (event, input) => {
-        // Only prevent default f r Escape if it would close the window
+        // Only prevent default for Escape if it would close the window
         // but still allow the event to be handled in the renderer
         if (input.key === "Escape") {
             // We don't call preventDefault() here, as it would stop the event
@@ -291,18 +254,17 @@ async function createWindow() {
         isMenuOpen = arg;
         win.setIgnoreMouseEvents(!isMenuOpen, { forward: true });
     });
-
     ipcMain.handle("search", async (event, arg) => {
         try {
             const registry = readFileSync(
-                path.join(process.env.APP_ROOT, "apps", "registry.json"),
+                pathModule.join(process.env.APP_ROOT, "apps", "registry.json"),
                 "utf-8"
             );
             const data = JSON.parse(registry);
             const allApps = data.installedApps.map((app: string) => {
                 try {
                     const manifest = readFileSync(
-                        path.join(
+                        pathModule.join(
                             process.env.APP_ROOT,
                             "apps",
                             app,
@@ -338,44 +300,91 @@ async function createWindow() {
             if (Array.isArray(installedApps)) {
                 installedApps.forEach((app) => {
                     if (app && app.name) {
-                        // Destructure app to separate intents from other properties
+                        // Make sure we have all required fields
                         allIntents.push({
                             application: {
-                                name: app.name,
+                                name: app.name || "Unknown Application",
                                 icon: {
                                     type: "image",
-                                    value: app.appIcon,
+                                    value: app.appIcon || null,
                                 },
-                                appScheme: app.identifier,
+                                appScheme:
+                                    app.identifier ||
+                                    `app-${Math.random()
+                                        .toString(36)
+                                        .substring(2, 9)}`,
                             },
                             type: "openApp",
-                            appPath: app.path,
-                            name: app.name,
-                            description: app.publisher,
-                            aliases: [app.name],
+                            appPath: app.path || "",
+                            name: app.name || "Unknown Application",
+                            description: app.publisher || "Local Application",
+                            aliases: [app.name || "Unknown Application"],
+                            minQueryLength: 1, // Default minQueryLength for installed apps
                         });
                     }
                 });
             }
 
+            // Helper function to safely test a regex pattern
+            const safeRegexMatch = (pattern: string, text: string): boolean => {
+                try {
+                    const regex = new RegExp(pattern, "i"); // Case insensitive by default
+                    return regex.test(text);
+                } catch (error) {
+                    console.error(`Invalid regex pattern: ${pattern}`, error);
+                    return false;
+                }
+            };
+
+            // Skip empty searches
+            if (!arg || arg.trim() === "") return [];
+
+            const searchTerm = arg.toLowerCase();
+            const queryLength = searchTerm.length;
+
             const returnData = allIntents
                 .filter((intent) => {
-                    // Check if the search matches the intent name
-                    const nameMatch = intent.name
-                        .toLowerCase()
-                        .includes(arg.toLowerCase());
+                    // Check minimum query length requirement
+                    const minLength = intent.minQueryLength || 1; // Default to 1 if not specified
+                    if (queryLength < minLength) return false;
 
-                    // Check if the search matches any of the aliases (if they exist)
+                    // Determine which search methods to use
+                    const searchBy = intent.searchBy || [
+                        "name",
+                        "aliases",
+                        "regex",
+                    ];
+
+                    // Check for regex patterns if enabled in searchBy
+                    if (
+                        searchBy.includes("regex") &&
+                        intent.regexPatterns &&
+                        Array.isArray(intent.regexPatterns)
+                    ) {
+                        const regexMatch = intent.regexPatterns.some(
+                            (pattern) => safeRegexMatch(pattern, searchTerm)
+                        );
+                        if (regexMatch) return true;
+                    }
+
+                    // Check if name search is enabled and matches
+                    const nameMatch =
+                        searchBy.includes("name") &&
+                        intent.name.toLowerCase().includes(searchTerm);
+                    if (nameMatch) return true;
+
+                    // Check if aliases search is enabled and matches
                     const aliasMatch =
+                        searchBy.includes("aliases") &&
                         intent.aliases &&
                         intent.aliases.some((alias: string) =>
-                            alias.toLowerCase().includes(arg.toLowerCase())
+                            alias.toLowerCase().includes(searchTerm)
                         );
 
-                    // Return true if either name or any alias matches
-                    return nameMatch || aliasMatch;
+                    return aliasMatch;
                 })
                 .slice(0, 5); // Limit to 5 results
+            console.log("Search results:", returnData);
 
             return returnData;
         } catch (err) {
@@ -414,6 +423,207 @@ async function createWindow() {
     // win.webContents.on('will-navigate', (event, url) => { }) #344
 }
 
+function getExecutablePathFromFolder(folderPath: string): string | null {
+    // Try to find executable file in InstallLocation
+    const exeExtensions = [".exe", ".com", ".bat", ".cmd"];
+
+    try {
+        // Check if directory exists before reading
+        if (!fs.existsSync(folderPath)) {
+            throw new Error(`Install location does not exist: ${folderPath}`);
+        }
+
+        const files = fs.readdirSync(folderPath);
+        const executableFiles = files.filter((file) => {
+            const ext = pathModule.extname(file).toLowerCase();
+            const fileName = file.toLowerCase();
+            return (
+                exeExtensions.includes(ext) &&
+                !fileName.includes("uninstall") &&
+                !fileName.includes("setup") &&
+                !fileName.includes("update") &&
+                !fileName.includes("install") &&
+                !fileName.includes("installer") &&
+                !fileName.includes("ActionRunner")
+            );
+        });
+
+        if (executableFiles.length > 0) {
+            let execPath = pathModule.join(folderPath, executableFiles[0]);
+            if (execPath.includes(",")) {
+                execPath = execPath.split(",")[0].trim();
+            }
+            return execPath;
+        }
+        return null; // No valid executable found
+    } catch (error) {
+        console.error(`Error finding executable for ${name}:`, error);
+        return null; // Return null on error
+    }
+}
+
+// Add a separate function to load installed apps with better error handling
+async function loadInstalledApps() {
+    // If already loading, don't start a new loading process
+    if (appLoadingInProgress) {
+        console.log("App loading already in progress, skipping");
+        return;
+    }
+
+    appLoadingInProgress = true;
+
+    // Create abort controller for this operation
+    if (appLoadAbortController) {
+        try {
+            appLoadAbortController.abort();
+        } catch (e) {
+            console.error("Error aborting previous load:", e);
+        }
+    }
+
+    appLoadAbortController = new AbortController();
+    const signal = appLoadAbortController.signal;
+
+    try {
+        console.log("Starting to load installed apps");
+        const apps = (await getInstalledApps()) as InstalledApp[];
+
+        // Check if operation was aborted
+        if (signal.aborted) {
+            console.log("App loading was aborted");
+            appLoadingInProgress = false;
+            return;
+        }
+
+        const appPromises = apps.map(async (application: InstalledApp) => {
+            // Check for abort periodically
+            if (signal.aborted) return null;
+
+            try {
+                const name = application.DisplayName || application.appName;
+                const publisher =
+                    application.Publisher || application.appPublisher;
+                const version =
+                    application.DisplayVersion || application.appVersion;
+                const identifier = application.appIdentifier;
+                let path = null;
+
+                if (!name) return null; // Skip unnamed apps
+
+                if (application.InstallLocation) {
+                    // Use InstallLocation if available
+                    path = getExecutablePathFromFolder(
+                        application.InstallLocation
+                    );
+                } else if (application.DisplayIcon) {
+                    // Extract executable path from DisplayIcon if available
+                    try {
+                        const iconPath = application.DisplayIcon;
+                        if (iconPath) {
+                            // Remove any parameters after comma and trim
+                            let cleanIconPath = iconPath.split(",")[0].trim();
+
+                            // Check if it points to an exe file
+                            if (cleanIconPath.toLowerCase().endsWith(".exe")) {
+                                // If it's a valid path and file exists, use it
+                                if (fs.existsSync(cleanIconPath)) {
+                                    path = cleanIconPath;
+                                }
+                            } else {
+                                // If it's not an exe, get the directory and look for executables
+                                const iconDir =
+                                    pathModule.dirname(cleanIconPath);
+                                if (fs.existsSync(iconDir)) {
+                                    path = getExecutablePathFromFolder(iconDir);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error(
+                            `Error extracting path from DisplayIcon for ${name}:`,
+                            error
+                        );
+                    }
+                }
+
+                // Create an app icon only if we have a valid path
+                let appIcon = null;
+                if (path && fs.existsSync(path)) {
+                    try {
+                        // Check for abort before expensive icon extraction
+                        if (signal.aborted) return null;
+
+                        const icon = await app.getFileIcon(path, {
+                            size: "normal",
+                        });
+                        const iconData = icon.toPNG().toString("base64");
+                        appIcon = `data:image/png;base64,${iconData}`;
+                    } catch (error) {
+                        console.error(
+                            `Failed to extract icon from ${path}:`,
+                            error
+                        );
+                        // Use a safer fallback approach
+                        try {
+                            appIcon = `file://${path.split(",")[0].trim()}`;
+                        } catch (e) {
+                            appIcon = null;
+                        }
+                    }
+                }
+
+                if (!path) return null; // Skip if no executable path found
+
+                return {
+                    name,
+                    publisher,
+                    version,
+                    identifier,
+                    path,
+                    appIcon,
+                };
+            } catch (error) {
+                console.error("Error processing app:", error);
+                return null; // Skip on any error
+            }
+        });
+
+        // Process apps in batches to avoid memory issues
+        const batchSize = 10;
+        const results = [];
+
+        for (let i = 0; i < appPromises.length; i += batchSize) {
+            // Check for abort between batches
+            if (signal.aborted) {
+                console.log("App loading was aborted during batch processing");
+                break;
+            }
+
+            const batch = appPromises.slice(i, i + batchSize);
+            const batchResults = await Promise.all(batch);
+            results.push(...batchResults);
+        }
+
+        // Final abort check before assignment
+        if (!signal.aborted) {
+            installedApps = results.filter((app) => app !== null);
+            console.log(
+                `Successfully loaded ${installedApps.length} installed apps`
+            );
+        }
+    } catch (error) {
+        console.error("Error during app loading:", error);
+        installedApps = [];
+    } finally {
+        // Always clean up regardless of success or failure
+        appLoadingInProgress = false;
+        appLoadAbortController = null;
+    }
+}
+
+// Call this early in the app lifecycle
+handleDevModeShutdown();
+
 app.whenReady()
     .then(() => {
         globalShortcut.register("Alt+CommandOrControl+Space", () => {
@@ -449,12 +659,36 @@ app.on("activate", () => {
     }
 });
 
-app.on("will-quit", () => {
-    cleanupAndExit();
+// Make these handlers more robust with try-catch blocks
+app.on("will-quit", (event) => {
+    try {
+        console.log("App will quit, performing cleanup...");
+        cleanupAndExit();
+    } catch (error) {
+        console.error("Error during will-quit cleanup:", error);
+    }
 });
 
 app.on("quit", () => {
-    cleanupAndExit();
+    try {
+        console.log("App quitting, performing final cleanup...");
+        cleanupAndExit();
+    } catch (error) {
+        console.error("Error during quit cleanup:", error);
+    }
+});
+
+app.on("before-quit", (event) => {
+    console.log("Before app quit, preparing for cleanup...");
+    try {
+        // Do any pre-quit preparation here
+        // This runs before will-quit
+        if (win && win.webContents) {
+            win.webContents.removeAllListeners();
+        }
+    } catch (error) {
+        console.error("Error during before-quit:", error);
+    }
 });
 
 // Background process management handlers

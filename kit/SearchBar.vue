@@ -25,7 +25,7 @@ onMounted(() => {
 </script>
 <template>
     <div
-        class="flex shrink-0 items-center rounded-t-xl h-16 inset-shadow-xs inset-shadow-neutral-800 border-b border-b-neutral-800 p-3"
+        class="flex shrink-0 items-center rounded-t-2xl h-16 inset-shadow-xs inset-shadow-neutral-800 border-b border-b-neutral-800 p-3"
     >
         <input
             ref="inputRef"

@@ -151,7 +151,10 @@ watch(
 <template>
     <div class="p-4 flex flex-col">
         <div v-if="musicState" class="flex items-center gap-3">
-            <canvas id="live-activity-visualizer" class="w-5 h-5 mx-1"></canvas>
+            <canvas
+                id="live-activity-visualizer"
+                class="w-5 h-5 ms-1 me-3"
+            ></canvas>
 
             <div class="flex flex-col flex-1 min-w-0">
                 <span class="font-medium truncate">{{ musicState.title }}</span>

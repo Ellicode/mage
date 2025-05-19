@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref, onBeforeUnmount } from "vue";
-import { Intent } from "./types";
+import { onMounted, ref, onBeforeUnmount, ComponentPublicInstance } from "vue";
+import { Application, Intent } from "./types";
 import Icon from "./components/Icon.vue";
 
 import ListItem from "../kit/ListItem.vue";
@@ -20,23 +20,60 @@ const isMenuOpen = ref(false);
 const searchInput = ref<HTMLInputElement | null>(null);
 const query = ref("");
 const searchResults = ref<Intent[]>([]);
-const widget = ref<Intent | null>(null);
+const widget = ref<ComponentPublicInstance | null>(null);
+const widgetApp = ref<Application | null>(null); // Track the application of the widget
 const selectedIndex = ref(-1); // Track the currently selected item
 
 const search = async () => {
     if (query.value.length > 0) {
         const data = await window.ipcRenderer.invoke("search", query.value);
-        searchResults.value = data.filter((result: Intent) => {
-            return result.type !== "widget";
-        });
-        widget.value = data.find((result: Intent) => {
-            return result.type === "widget";
-        }) as Intent;
+
+        // Separate widget results and regular results
+        const widgetResults = data.filter(
+            (result: Intent) => result.type === "widget"
+        );
+        searchResults.value = data.filter(
+            (result: Intent) => result.type !== "widget"
+        );
+
+        console.log("Search results:", searchResults.value);
+        console.log("Widget results:", widgetResults);
+
+        // Handle widget component if available
+        if (widgetResults.length > 0) {
+            try {
+                const widgetResult = widgetResults[0]; // Get the first matching widget
+                console.log("Loading widget:", widgetResult.src);
+
+                // Fix the import path handling
+                const componentPath = widgetResult.src.replace(
+                    "@/",
+                    "../apps/" + widgetResult.application?.appScheme + "/"
+                );
+                console.log("Widget component path:", componentPath);
+
+                const widgetComponent = await import(
+                    /* @vite-ignore */
+                    componentPath
+                );
+
+                widget.value = widgetComponent.default;
+                widgetApp.value = widgetResult.application; // Store the application of the widget
+                console.log("Widget loaded successfully");
+            } catch (error) {
+                console.error("Error loading widget:", error);
+                widget.value = null;
+            }
+        } else {
+            widget.value = null;
+        }
+
         // Reset selected index when search results change
         selectedIndex.value = searchResults.value.length > 0 ? 0 : -1;
     } else {
         searchResults.value = [];
         selectedIndex.value = -1;
+        widget.value = null;
     }
 };
 
@@ -362,7 +399,7 @@ const alertType = ref<
         <transition name="open-menu" mode="out-in">
             <div
                 v-if="isMenuOpen"
-                class="w-full relative text-neutral-100 max-w-3xl shadow-2xl shadow-black/75 bg-neutral-900 rounded-xl border border-neutral-950"
+                class="w-full relative text-neutral-100 max-w-3xl shadow-2xl shadow-black/75 bg-neutral-900 rounded-2xl border border-neutral-950"
                 :class="{
                     'h-[500px]': page === 'application',
                 }"
@@ -380,10 +417,10 @@ const alertType = ref<
                 </div>
                 <template v-if="page === 'search'">
                     <div
-                        class="flex items-center rounded-t-xl h-16 inset-shadow-xs inset-shadow-neutral-800 p-3"
+                        class="flex items-center rounded-t-2xl h-16 inset-shadow-xs inset-shadow-neutral-800 p-3"
                         :class="{
                             'border-b border-neutral-800':
-                                searchResults.length > 0,
+                                searchResults.length > 0 || widget,
                         }"
                     >
                         <input
@@ -395,6 +432,18 @@ const alertType = ref<
                             placeholder="Search anything"
                         />
                     </div>
+
+                    <!-- Display widget if available -->
+                    <div
+                        v-if="widget"
+                        class="relative p-5 max-h-30 overflow-hidden"
+                    >
+                        <component :is="widget" :query="query" />
+                        <p class="text-neutral-500 text-sm">
+                            From {{ widgetApp?.name }}
+                        </p>
+                    </div>
+
                     <ul class="flex flex-col">
                         <ListItem
                             v-for="(result, index) in searchResults"
@@ -445,17 +494,17 @@ const alertType = ref<
                                     class="relative me-2"
                                 >
                                     <div
-                                        class="w-2 h-2 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full animate-ping bg-white/50"
+                                        class="w-2 h-2 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full animate-ping bg-red-400/50"
                                     ></div>
                                     <div
-                                        class="w-1 h-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
+                                        class="w-1 h-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-400"
                                     ></div>
                                 </div>
                             </template>
                         </ListItem>
                     </ul>
                     <div
-                        class="flex gap-5 items-center justify-end border-t border-neutral-800 p-2"
+                        class="flex gap-5 mt-2 items-center justify-end border-t border-neutral-800 p-2"
                         v-if="searchResults.length > 0"
                     >
                         <button

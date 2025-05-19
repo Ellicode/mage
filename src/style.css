@@ -1,9 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
 @import "tailwindcss";
 
 @theme {
     --default-font-family: "Inter", sans-serif;
     --default-font-variation-settings: "opsz" "auto";
+}
+
+*:not(input, textarea, [contenteditable="true"], .select-text) {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 ::-webkit-scrollbar {
