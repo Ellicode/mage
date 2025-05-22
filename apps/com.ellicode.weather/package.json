@@ -1,0 +1,16 @@
+{
+    "name": "com-ellicode-weather",
+    "version": "1.0.0",
+    "description": "Weather application for Mage platform",
+    "type": "module",
+    "scripts": {
+        "build": "tsc"
+    },
+    "dependencies": {
+        "lucide-vue-next": "^0.508.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.2",
+        "vue": "^3.4.21"
+    }
+}

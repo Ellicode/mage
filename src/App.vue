@@ -15,6 +15,7 @@ import {
     componentRegistry,
 } from "../kit/process";
 import Alert from "./components/Alert.vue";
+import AlertButton from "./components/AlertButton.vue";
 
 const isMenuOpen = ref(false);
 const searchInput = ref<HTMLInputElement | null>(null);
@@ -45,16 +46,21 @@ const search = async () => {
                 const widgetResult = widgetResults[0]; // Get the first matching widget
                 console.log("Loading widget:", widgetResult.src);
 
-                // Fix the import path handling
-                const componentPath = widgetResult.src.replace(
-                    "@/",
-                    "../apps/" + widgetResult.application?.appScheme + "/"
-                );
+                // Fix the import path handling with better error handling
+                const appScheme = widgetResult.application?.appScheme;
+                if (!appScheme) {
+                    throw new Error(
+                        "Widget has no associated application scheme"
+                    );
+                }
+
+                // Normalize the path for proper importing
+                const componentPath = widgetResult.src.replace("@/", "");
                 console.log("Widget component path:", componentPath);
 
                 const widgetComponent = await import(
                     /* @vite-ignore */
-                    componentPath
+                    `../apps/${appScheme}/${componentPath}`
                 );
 
                 widget.value = widgetComponent.default;
@@ -97,20 +103,27 @@ const activePageComponent = ref(null);
 const activeIntent = ref<Intent | null>(null);
 
 const executeIntent = (intent: Intent) => {
-    // You can add the code to execute the intent here
+    // Execute the intent based on type
     if (intent.type === "menu") {
+        // Normalize the path for proper importing
+        const appPath = intent.src.replace("@/", "");
         const component = import(
             /* @vite-ignore */
-            `../apps/${intent.application?.appScheme}/${intent.src.replace(
-                "@/",
-                ""
-            )}`
+            `../apps/${intent.application?.appScheme}/${appPath}`
         );
-        component.then((module) => {
-            activePageComponent.value = module.default;
-            activeIntent.value = intent;
-            page.value = "application"; // Set the page to 1 when a menu is opened
-        });
+        component
+            .then((module) => {
+                activePageComponent.value = module.default;
+                activeIntent.value = intent;
+                page.value = "application"; // Set the page to "application" when a menu is opened
+            })
+            .catch((error) => {
+                console.error(
+                    `Failed to load app component: ${appPath}`,
+                    error
+                );
+                // TODO: Show error to user
+            });
     } else if (intent.type === "openApp") {
         window.ipcRenderer.send("open-app", {
             appPath: intent.appPath,
@@ -310,8 +323,42 @@ onMounted(() => {
         }
         handleKeydown(e);
     });
+
+    window.ipcRenderer.on("promptPermission", (event, data) => {
+        const { appScheme, appName, prompt, type } = data as {
+            appScheme: string;
+            appName: string;
+            prompt: string;
+            type: "location" | "camera" | "microphone";
+        };
+
+        const promptPhrases = {
+            location: "access your location",
+            camera: "access your camera",
+            microphone: "access your microphone",
+        };
+
+        showSecurityAlert.value = true;
+        alertTitle.value = appName + " wants to " + promptPhrases[type];
+        alertDescription.value = prompt;
+        if (type === "location") {
+            alertType.value = "security.location";
+        }
+    });
 });
 
+const allowSecurityAlert = () => {
+    showSecurityAlert.value = false;
+    window.ipcRenderer.send("permissionResponse", {
+        status: "granted",
+    });
+};
+const denySecurityAlert = () => {
+    showSecurityAlert.value = false;
+    window.ipcRenderer.send("permissionResponse", {
+        status: "denied",
+    });
+};
 onBeforeUnmount(() => {
     // Clean up the interval when component is unmounted
     if (updateInterval.value) {
@@ -350,7 +397,7 @@ const blurWindow = () => {
     console.log("Blurring window");
 };
 
-const showAlert = ref(false);
+const showSecurityAlert = ref(false);
 const alertTitle = ref("Test Alert");
 const alertDescription = ref("This is a test description");
 const alertType = ref<
@@ -508,7 +555,6 @@ const alertType = ref<
                         v-if="searchResults.length > 0"
                     >
                         <button
-                            @click="showAlert = !showAlert"
                             class="text-sm outline-0 flex items-center gap-3 p-1 px-2 rounded-md transition cursor-pointer active:bg-neutral-700 hover:bg-neutral-800"
                         >
                             Execute action
@@ -566,11 +612,16 @@ const alertType = ref<
         </transition>
     </div>
     <Alert
-        v-model="showAlert"
+        v-model="showSecurityAlert"
         :title="alertTitle"
         :description="alertDescription"
         :type="alertType"
-    />
+    >
+        <AlertButton @click="allowSecurityAlert"> Allow </AlertButton>
+        <AlertButton @click="denySecurityAlert" type="destructive">
+            Deny
+        </AlertButton>
+    </Alert>
 </template>
 
 <style scoped>

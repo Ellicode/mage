@@ -1,10 +1,10 @@
 {
     "installedApps": [
-        "com.ellicode.weather",
         "com.ellicode.music",
+        "com.ellicode.calculator",
+        "com.ellicode.weather",
         "com.ellicode.timer",
-        "com.ellicode.calculator"
+        "com.ellicode.notes"
     ],
-
     "permissions": {}
 }

@@ -74,15 +74,23 @@ export default defineConfig(({ command }) => {
                 renderer: {},
             }),
         ],
-        server:
-            process.env.VSCODE_DEBUG &&
-            (() => {
-                const url = new URL(pkg.debug.env.VITE_DEV_SERVER_URL);
-                return {
-                    host: url.hostname,
-                    port: +url.port,
-                };
-            })(),
+        server: {
+            ...(process.env.VSCODE_DEBUG &&
+                (() => {
+                    const url = new URL(pkg.debug.env.VITE_DEV_SERVER_URL);
+                    return {
+                        host: url.hostname,
+                        port: +url.port,
+                    };
+                })()),
+            watch: {
+                ignored: [
+                    "**/node_modules/**",
+                    "**/apps/registry.json",
+                    "**/apps/com.ellicode.notes/assets/notes.json",
+                ],
+            },
+        },
         clearScreen: false,
     };
 });

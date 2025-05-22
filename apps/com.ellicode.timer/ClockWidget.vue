@@ -31,13 +31,11 @@ onBeforeUnmount(() => {
 });
 </script>
 <template>
-    <div class="flex items-center gap-2">
-        <ClockIcon class="text-amber-500 w-6 h-6 mr-2" />
-        <h3 class="text-2xl font-medium">
-            {{ currentTime }}
-            <small class="text-neutral-400">
-                {{ timezone }}
-            </small>
-        </h3>
-    </div>
+    <p class="tracking-wider text-neutral-500 text-xs mb-2">CURRENT TIME</p>
+    <h3 class="text-2xl font-medium mb-2">
+        {{ currentTime }}
+        <small class="text-neutral-400">
+            {{ timezone }}
+        </small>
+    </h3>
 </template>

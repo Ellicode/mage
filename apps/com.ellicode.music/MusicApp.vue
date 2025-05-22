@@ -1,21 +1,23 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from "vue";
-import ListItem from "../../kit/ListItem.vue";
 import { Music2, MusicIcon, Pause, Play, Rewind } from "lucide-vue-next";
-import SearchBar from "../../kit/SearchBar.vue";
+import { ListItem, SearchBar, clientProcessHandler } from "../../kit/sdk";
 import {
     toggleMusic,
     startMusic,
     stopMusic,
     getCurrentMusicState,
 } from "./index";
-import { clientProcessHandler } from "../../kit/process";
 
 // Get the client process handler for monitoring music processes
 const processHandler = clientProcessHandler("com.ellicode.music");
 
 // Add missing currentAudio reference
 const currentAudio = ref<HTMLAudioElement | null>(null);
+
+import { getAssetPath } from "../../kit/sdk";
+
+const APP_SCHEME = "com.ellicode.music";
 
 const songs = ref<
     {
@@ -29,43 +31,43 @@ const songs = ref<
         id: 1,
         title: "Lost signal",
         artist: "Lofi & Chill",
-        url: "./apps/com.ellicode.music/assets/song1.mp3",
+        url: getAssetPath(APP_SCHEME, "song1.mp3"),
     },
     {
         id: 2,
         title: "Coffee Break",
         artist: "Lofi & Chill",
-        url: "./apps/com.ellicode.music/assets/song2.mp3",
+        url: getAssetPath(APP_SCHEME, "song2.mp3"),
     },
     {
         id: 3,
         title: "Paper Dreams",
         artist: "Lofi & Chill",
-        url: "./apps/com.ellicode.music/assets/song3.mp3",
+        url: getAssetPath(APP_SCHEME, "song3.mp3"),
     },
     {
         id: 4,
         title: "Midnight Haze",
         artist: "Lofi & Chill",
-        url: "./apps/com.ellicode.music/assets/song4.mp3",
+        url: getAssetPath(APP_SCHEME, "song4.mp3"),
     },
     {
         id: 5,
         title: "Empty Streets",
         artist: "Lofi & Chill",
-        url: "./apps/com.ellicode.music/assets/song5.mp3",
+        url: getAssetPath(APP_SCHEME, "song5.mp3"),
     },
     {
         id: 6,
         title: "Faded Light",
         artist: "Lofi & Chill",
-        url: "./apps/com.ellicode.music/assets/song6.mp3",
+        url: getAssetPath(APP_SCHEME, "song6.mp3"),
     },
     {
         id: 7,
         title: "Quiet Rain",
         artist: "Lofi & Chill",
-        url: "./apps/com.ellicode.music/assets/song7.mp3",
+        url: getAssetPath(APP_SCHEME, "song7.mp3"),
     },
 ]);
 
@@ -272,7 +274,7 @@ const filteredSongs = computed(() => {
             <Rewind fill="white" class="w-5 h-5" />
         </button>
         <button
-            class="h-8 w-8 rounded-full cursor-pointer transition-all active:bg-neutral-700 active:scale-95 hover:bg-neutral-800 flex items-center justify-center"
+            class="h-8 w-8 rounded-full cursor-pointer transition-all active:bg-neutral-700 active:scale-90 hover:bg-neutral-800 flex items-center justify-center"
             @click="playpause"
         >
             <Play

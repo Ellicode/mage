@@ -10,11 +10,14 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import pathModule from "node:path";
 import os from "node:os";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { getInstalledApps } from "get-installed-apps";
 import fs from "node:fs";
 import { exec } from "child_process";
 import process from "node:process";
+import dns from "node:dns";
+import https from "node:https";
+import geoip from "geoip-lite";
 
 const require = createRequire(import.meta.url);
 const __dirname = pathModule.dirname(fileURLToPath(import.meta.url));
@@ -253,6 +256,330 @@ async function createWindow() {
     ipcMain.on("ui-toggle-menu", (event, arg) => {
         isMenuOpen = arg;
         win.setIgnoreMouseEvents(!isMenuOpen, { forward: true });
+    });
+    ipcMain.handle(
+        "executeServerSideScript",
+        async (event, { file, args, appScheme }) => {
+            try {
+                console.log(
+                    `Executing server-side script: ${file} with args:`,
+                    args
+                );
+
+                // Support relative paths by ensuring proper structure
+                const normalizedFile = file
+                    .replace(/\\/g, "/")
+                    .replace(/^\.?\/+/, "");
+
+                // Create the absolute path to the script file
+                const scriptAbsolutePath = pathModule.join(
+                    process.env.APP_ROOT,
+                    "apps",
+                    appScheme,
+                    normalizedFile + ".js"
+                );
+
+                // Convert to a proper file:// URL for ES module import
+                const fileUrl = `file:///${scriptAbsolutePath
+                    .replace(/\\/g, "/")
+                    .replace(/^([a-zA-Z]):/, "$1:")}`;
+
+                // Also check if a TypeScript version exists (for error reporting)
+                const tsScriptPath = pathModule.join(
+                    process.env.APP_ROOT,
+                    "apps",
+                    appScheme,
+                    normalizedFile + ".ts"
+                );
+
+                if (!fs.existsSync(scriptAbsolutePath)) {
+                    // If JS file doesn't exist but TS file does, provide a helpful error
+                    if (fs.existsSync(tsScriptPath)) {
+                        throw new Error(
+                            `Found TypeScript file at ${tsScriptPath} but expected compiled JavaScript file at ${scriptAbsolutePath}. Please compile your TypeScript files.`
+                        );
+                    } else {
+                        throw new Error(
+                            `Script file not found: ${scriptAbsolutePath}`
+                        );
+                    }
+                }
+                console.log(`Importing script from: ${fileUrl}`);
+
+                // Check for app-specific node_modules
+                const appNodeModulesPath = pathModule.join(
+                    process.env.APP_ROOT,
+                    "apps",
+                    appScheme,
+                    "node_modules"
+                );
+
+                // Check if app has its own node_modules
+                const hasAppNodeModules = fs.existsSync(appNodeModulesPath);
+
+                // Import the module with custom NODE_PATH handling if needed
+                let scriptModule;
+                if (hasAppNodeModules) {
+                    console.log(
+                        `Found app-specific node_modules for ${appScheme}`
+                    );
+
+                    // Store original NODE_PATH
+                    const originalNodePath = process.env.NODE_PATH || "";
+                    try {
+                        // Add app-specific modules path to NODE_PATH
+                        process.env.NODE_PATH = `${appNodeModulesPath}${pathModule.delimiter}${originalNodePath}`;
+                        // Update module resolution
+                        require("module").Module._initPaths();
+
+                        // Import with enhanced module resolution
+                        scriptModule = await import(fileUrl);
+                    } finally {
+                        // Restore original NODE_PATH
+                        process.env.NODE_PATH = originalNodePath;
+                        // Update module resolution back to original
+                        require("module").Module._initPaths();
+                    }
+                } else {
+                    // Standard import with default module resolution
+                    scriptModule = await import(fileUrl);
+                }
+
+                if (typeof scriptModule.default === "function") {
+                    // Execute the default export function with the provided arguments
+                    const result = await scriptModule.default(...args);
+                    return { success: true, result };
+                } else {
+                    throw new Error(
+                        `Invalid script format: ${file} does not export a default function`
+                    );
+                }
+            } catch (error) {
+                console.error(`Error executing server-side script:`, error);
+                return {
+                    success: false,
+                    error: error.message || "Unknown error executing script",
+                };
+            }
+        }
+    );
+    ipcMain.handle("promptPermission", async (event, arg) => {
+        const getIP = async () => {
+            try {
+                // First attempt to fetch public IP from ipify API
+                return new Promise<string>((resolve, reject) => {
+                    const req = https.get("https://api.ipify.org", (res) => {
+                        let data = "";
+                        res.on("data", (chunk) => {
+                            data += chunk;
+                        });
+                        res.on("end", () => {
+                            if (res.statusCode === 200) {
+                                console.log("Public IP Address:", data);
+                                resolve(data.trim());
+                            } else {
+                                reject(
+                                    new Error(
+                                        `Failed to get IP: ${res.statusCode}`
+                                    )
+                                );
+                            }
+                        });
+                    });
+
+                    req.on("error", (err) => {
+                        console.error("Error getting public IP:", err);
+                        // Fall back to local IP
+                        dns.lookup(
+                            os.hostname(),
+                            { family: 4 },
+                            (err, addr) => {
+                                if (err) {
+                                    reject(err);
+                                } else {
+                                    console.log("Fallback to local IP:", addr);
+                                    resolve(addr);
+                                }
+                            }
+                        );
+                    });
+
+                    req.setTimeout(5000, () => {
+                        req.destroy();
+                        console.warn(
+                            "IP request timed out, falling back to local IP"
+                        );
+                        // Fall back to local IP on timeout
+                        dns.lookup(
+                            os.hostname(),
+                            { family: 4 },
+                            (err, addr) => {
+                                if (err) {
+                                    reject(err);
+                                } else {
+                                    console.log("Fallback to local IP:", addr);
+                                    resolve(addr);
+                                }
+                            }
+                        );
+                    });
+                });
+            } catch (error) {
+                console.error("Failed to get public IP:", error);
+                // Ultimate fallback to local IP if everything else fails
+                return new Promise<string>((resolve, reject) => {
+                    dns.lookup(os.hostname(), { family: 4 }, (err, addr) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(addr);
+                        }
+                    });
+                });
+            }
+        };
+        const getLocation = async () => {
+            const currentIP = await getIP();
+            var geo = geoip.lookup(currentIP);
+            console.log("GeoIP data:", geo);
+
+            return {
+                latitude: geo.ll[0],
+                longitude: geo.ll[1],
+            };
+        };
+        const { appScheme, appName, prompt, type } = arg;
+        console.log(
+            `Prompting permission for ${type} from ${appName} (${appScheme})`
+        );
+        const registry = readFileSync(
+            pathModule.join(process.env.APP_ROOT, "apps", "registry.json"),
+            "utf-8"
+        );
+        const data = JSON.parse(registry);
+        // example permission:
+        // permissions: {
+        //    "com.example.app": {
+        //        "location: "prompt",
+        //        "notifications": "granted"
+        //    }
+        // }
+
+        const appPermissions = data.permissions[appScheme] || {};
+        const permissionStatus = appPermissions[type] || "prompt";
+
+        if (permissionStatus === "granted") {
+            console.log(`Permission for ${type} already granted`);
+
+            // If location permission is granted, provide coordinates
+            if (type === "location") {
+                try {
+                    const locationData = await getLocation();
+                    console.log("Retrieved location data:", locationData);
+                    return {
+                        status: "granted",
+                        latitude: locationData.latitude,
+                        longitude: locationData.longitude,
+                    };
+                } catch (error) {
+                    console.error("Error retrieving location:", error);
+                    return {
+                        status: "granted",
+                        error: "Failed to retrieve location",
+                    };
+                }
+            }
+
+            return { status: "granted" };
+        } else if (permissionStatus === "denied") {
+            console.log(`Permission for ${type} denied`);
+            return { status: "denied" };
+        } else {
+            win.webContents.send("promptPermission", {
+                appScheme,
+                appName,
+                prompt,
+                type,
+            });
+            return new Promise((resolve) => {
+                ipcMain.once("permissionResponse", async (event, response) => {
+                    const { status } = response;
+                    console.log(`Permission ${type} response: ${status}`);
+                    if (status === "granted") {
+                        appPermissions[type] = "granted";
+
+                        // If location permission was just granted, get location data
+                        if (type === "location" && status === "granted") {
+                            try {
+                                // Similar implementation as above
+
+                                const locationData = await getLocation();
+                                console.log(
+                                    "Retrieved location data:",
+                                    locationData
+                                );
+
+                                // Save updated permissions to registry
+                                writeFileSync(
+                                    pathModule.join(
+                                        process.env.APP_ROOT,
+                                        "apps",
+                                        "registry.json"
+                                    ),
+                                    JSON.stringify(
+                                        {
+                                            ...data,
+                                            permissions: {
+                                                ...data.permissions,
+                                                [appScheme]: appPermissions,
+                                            },
+                                        },
+                                        null,
+                                        4
+                                    )
+                                );
+
+                                resolve({
+                                    status: "granted",
+                                    latitude: locationData.latitude,
+                                    longitude: locationData.longitude,
+                                });
+                                return;
+                            } catch (error) {
+                                console.error(
+                                    "Error retrieving location:",
+                                    error
+                                );
+                                // Continue with regular permission handling
+                            }
+                        }
+                    } else {
+                        appPermissions[type] = "denied";
+                    }
+
+                    // Save updated permissions to registry
+                    writeFileSync(
+                        pathModule.join(
+                            process.env.APP_ROOT,
+                            "apps",
+                            "registry.json"
+                        ),
+                        JSON.stringify(
+                            {
+                                ...data,
+                                permissions: {
+                                    ...data.permissions,
+                                    [appScheme]: appPermissions,
+                                },
+                            },
+                            null,
+                            4
+                        )
+                    );
+                    resolve({ status });
+                });
+            });
+        }
     });
     ipcMain.handle("search", async (event, arg) => {
         try {

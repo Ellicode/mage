@@ -7,7 +7,8 @@ import {
     TriangleAlert,
     XOctagon,
 } from "lucide-vue-next";
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, watch } from "vue";
+import AlertButton from "./AlertButton.vue";
 
 const props = defineProps({
     title: {
@@ -30,7 +31,8 @@ const props = defineProps({
 
 const model = defineModel();
 let eventListener: EventListener | null = null;
-onMounted(() => {
+let audio: HTMLAudioElement | null = null;
+onMounted(async () => {
     eventListener = (event: Event) => {
         if (model.value) {
             event.preventDefault();
@@ -40,8 +42,29 @@ onMounted(() => {
             }
         }
     };
+    const response = await fetch("./src/assets/sounds/alert.mp3");
+    const blob = await response.blob();
+    const audioDataURL = URL.createObjectURL(blob);
+
+    audio = new Audio(audioDataURL);
+
     document.addEventListener("keydown", eventListener);
 });
+
+watch(
+    () => model.value,
+    (newValue) => {
+        if (!audio) return;
+
+        if (newValue) {
+            audio.play();
+        } else {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+    },
+    { immediate: true }
+);
 
 onUnmounted(() => {
     if (eventListener) {
@@ -65,7 +88,7 @@ onUnmounted(() => {
                 class="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
                 <div
-                    class="fixed inset-0 bg-black/10"
+                    class="fixed inset-0 bg-black/30 scale-200"
                     @click="model = false"
                 ></div>
                 <div
@@ -94,7 +117,7 @@ onUnmounted(() => {
                     >
                         <Fingerprint class="w-6 h-6 text-white" />
                         <div
-                            class="absolute -bottom-3 -right-3 rounded-md bg-neutral-800 w-6 h-6 shadow-xl inset-shadow-neutral-700 inset-shadow-2xs flex items-center justify-center"
+                            class="absolute animate-pop -bottom-3 -right-3 rounded-md bg-neutral-800 w-6 h-6 shadow-xl inset-shadow-neutral-700 inset-shadow-2xs flex items-center justify-center"
                         >
                             <Navigation
                                 fill="#51a2ff"
@@ -103,18 +126,15 @@ onUnmounted(() => {
                             />
                         </div>
                     </div>
-                    <h3 class="text-lg mt-5">{{ title }}</h3>
-                    <p class="text-sm text-neutral-400 mt-2">
+                    <h3 class="text-lg text-center mt-5">{{ title }}</h3>
+                    <p class="text-sm text-center text-neutral-400 mt-2">
                         {{ description }}
                     </p>
                     <div class="flex flex-col gap-3 mt-5 w-full">
                         <slot>
-                            <button
-                                @click="model = false"
-                                class="w-full h-10 rounded-lg uppercase text-lg font-medium cursor-pointer transition-all bg-neutral-800 hover:bg-neutral-700 active:scale-95 flex items-center justify-center inset-shadow-neutral-700 inset-shadow-2xs"
-                            >
-                                Ok
-                            </button>
+                            <AlertButton @click="model = false">
+                                Close
+                            </AlertButton>
                         </slot>
                     </div>
                 </div>
@@ -126,5 +146,18 @@ onUnmounted(() => {
 <style scoped>
 .fixed {
     position: fixed;
+}
+
+.animate-pop {
+    animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes pop {
+    0% {
+        transform: scale(0);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 </style>

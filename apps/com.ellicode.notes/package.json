@@ -1,0 +1,16 @@
+{
+    "name": "com-ellicode-notes",
+    "version": "1.0.0",
+    "description": "A simple notes application that allows users to create, edit, and manage notes.",
+    "type": "module",
+    "scripts": {
+        "build": "tsc"
+    },
+    "dependencies": {
+        "lucide-vue-next": "^0.508.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.8.3",
+        "vue": "^3.4.21"
+    }
+}

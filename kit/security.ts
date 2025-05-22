@@ -10,7 +10,10 @@ export const getLocation = async (
         type: "location",
     });
     if (promptData.status === "granted") {
-        return true;
+        return {
+            latitude: promptData.latitude,
+            longitude: promptData.longitude,
+        };
     } else if (promptData.status === "denied") {
         return false;
     }

@@ -10,7 +10,7 @@ import {
     calculateTotalSeconds,
     formatTimeString,
 } from "./index";
-import { clientProcessHandler } from "../../kit/process";
+import { clientProcessHandler } from "../../kit/sdk";
 
 // Get the client process handler for timer processes
 const processHandler = clientProcessHandler("com.ellicode.timer");

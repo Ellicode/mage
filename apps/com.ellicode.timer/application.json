@@ -7,7 +7,7 @@
     "icon": {
         "type": "lucide-icon",
         "name": "Clock",
-        "color": "#f0b100"
+        "color": "#fe9a00"
     },
     "intents": [
         {

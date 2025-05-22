@@ -1,0 +1,30 @@
+{
+    "name": "Notes",
+    "description": "A simple notes application that allows users to create, edit, and manage notes.",
+    "version": "1.0.0",
+    "author": "Ellicode",
+    "appScheme": "com.ellicode.notes",
+    "icon": {
+        "type": "lucide-icon",
+        "name": "StickyNote",
+        "color": "#f0b100"
+    },
+    "intents": [
+        {
+            "name": "Notes",
+            "type": "menu",
+            "description": "Create and manage notes",
+            "src": "@/NotesApp.vue",
+            "intentScheme": "com.ellicode.notes.createNote",
+            "aliases": [
+                "notes",
+                "note",
+                "create note",
+                "add note",
+                "edit note",
+                "delete note",
+                "manage notes"
+            ]
+        }
+    ]
+}

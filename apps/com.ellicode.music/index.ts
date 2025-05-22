@@ -2,7 +2,11 @@ import {
     backgroundProcessHandler,
     clientProcessHandler,
     registerProcessComponent,
-} from "../../kit/process";
+    getAssetPath,
+} from "../../kit/sdk";
+
+// Define app scheme as a constant for consistency
+const APP_SCHEME = "com.ellicode.music";
 
 interface Song {
     id: number;

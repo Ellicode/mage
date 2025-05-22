@@ -15,7 +15,7 @@
             "type": "menu",
             "description": "Play smooth music",
             "src": "@/MusicApp.vue",
-            "intentScheme": "com.ellicode.music.getCurrentWeather",
+            "intentScheme": "com.ellicode.music.playMusic",
             "aliases": ["music", "play", "audio", "song", "band", "playlist"],
             "regexPatterns": [
                 "^music\\s+player$",

@@ -1,0 +1,23 @@
+{
+    "name": "App Template",
+    "description": "Template for creating new Mage apps",
+    "version": "1.0.0",
+    "author": "Your Name",
+    "appScheme": "template",
+    "icon": {
+        "type": "lucide-icon",
+        "name": "AppWindow",
+        "color": "#4287f5"
+    },
+    "intents": [
+        {
+            "name": "Template",
+            "type": "menu",
+            "description": "App template",
+            "src": "@/TemplateApp.vue",
+            "intentScheme": "com.example.template.open",
+            "aliases": ["template", "app"],
+            "regexPatterns": ["^template\\s+app$"]
+        }
+    ]
+}

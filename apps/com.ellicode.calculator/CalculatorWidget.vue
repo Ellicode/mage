@@ -73,7 +73,44 @@ const response = computed(() => {
                 return Math.pow(base, exponent);
             }
 
-            // Handle multiplication and division
+            // First split by addition and subtraction, but don't evaluate yet
+            if (expr.includes("+") || /[^e]-/.test(expr)) {
+                const parts = expr.split(/([+])|(?<!e)([-])/g).filter(Boolean);
+                let terms: { term: string; operator: string }[] = [];
+                let currentTerm = parts[0];
+                let currentOperator = "";
+
+                // Group terms correctly
+                for (let i = 1; i < parts.length; i++) {
+                    if (parts[i] === "+" || parts[i] === "-") {
+                        terms.push({
+                            term: currentTerm,
+                            operator: currentOperator,
+                        });
+                        currentOperator = parts[i];
+                        currentTerm = "";
+                    } else {
+                        currentTerm += parts[i];
+                    }
+                }
+                terms.push({ term: currentTerm, operator: currentOperator });
+
+                // Now evaluate each term (handling multiplication/division) and then combine
+                let result = evaluateMultiplicationDivision(terms[0].term);
+                for (let i = 1; i < terms.length; i++) {
+                    const value = evaluateMultiplicationDivision(terms[i].term);
+                    if (terms[i].operator === "+") result += value;
+                    else if (terms[i].operator === "-") result -= value;
+                }
+                return result;
+            }
+
+            // Handle multiplication and division directly if no +/- operations
+            return evaluateMultiplicationDivision(expr);
+        };
+
+        // Handle multiplication and division with proper left-to-right precedence
+        const evaluateMultiplicationDivision = (expr: string): number => {
             if (expr.includes("*") || expr.includes("/")) {
                 const terms = expr.split(/([*/])/);
                 let result = parseFloat(terms[0]);
@@ -84,28 +121,6 @@ const response = computed(() => {
 
                     if (operator === "*") result *= value;
                     else if (operator === "/") result /= value;
-                }
-                return result;
-            }
-
-            // Handle addition and subtraction
-            if (expr.includes("+") || /[^e]-/.test(expr)) {
-                // Split by + or - but not by e- (as in scientific notation)
-                const parts = expr.split(/([+])|(?<!e)([-])/g).filter(Boolean);
-                let result = parseFloat(parts[0] || "0");
-                let expectOperator = true;
-
-                for (let i = 1; i < parts.length; i++) {
-                    if (expectOperator) {
-                        // This should be an operator
-                        expectOperator = false;
-                    } else {
-                        // This should be a value
-                        const value = parseFloat(parts[i]);
-                        if (parts[i - 1] === "+") result += value;
-                        else if (parts[i - 1] === "-") result -= value;
-                        expectOperator = true;
-                    }
                 }
                 return result;
             }

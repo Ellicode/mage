@@ -22,8 +22,8 @@ const props = defineProps({
             'hover:bg-neutral-800 hover:inset-shadow-2xs': !active,
         }"
     >
-        <slot name="icon" />
-        <div class="flex flex-col items-start">
+        <slot name="icon" class="shrink-0" />
+        <div class="flex flex-col items-start truncate">
             <span>{{ title }}</span>
             <span v-if="description" class="text-neutral-500 text-xs">{{
                 description
