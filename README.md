@@ -1,79 +1,44 @@
-# electron-vite-vue
+# Mage 🪄
 
-🥳 Really simple `Electron` + `Vue` + `Vite` boilerplate.
+Mage, originally a [Raycast](raycast.com) clone, is a lightweight and fast launcher for Windows, built with Electron, Vite, and Vue 3. It features **custom applications**, **live activities**, **and a modern UI** and a **batteries included SDK for developers**.
 
-<!-- [![awesome-vite](https://awesome.re/mentioned-badge.svg)](https://github.com/vitejs/awesome-vite) -->
-<!-- [![Netlify Status](https://api.netlify.com/api/v1/badges/ae3863e3-1aec-4eb1-8f9f-1890af56929d/deploy-status)](https://app.netlify.com/sites/electron-vite/deploys) -->
-<!-- [![GitHub license](https://img.shields.io/github/license/caoxiemeihao/electron-vite-vue)](https://github.com/electron-vite/electron-vite-vue/blob/main/LICENSE) -->
-<!-- [![GitHub stars](https://img.shields.io/github/stars/caoxiemeihao/electron-vite-vue?color=fa6470)](https://github.com/electron-vite/electron-vite-vue) -->
-<!-- [![GitHub forks](https://img.shields.io/github/forks/caoxiemeihao/electron-vite-vue)](https://github.com/electron-vite/electron-vite-vue) -->
-[![GitHub Build](https://github.com/electron-vite/electron-vite-vue/actions/workflows/build.yml/badge.svg)](https://github.com/electron-vite/electron-vite-vue/actions/workflows/build.yml)
-[![GitHub Discord](https://img.shields.io/badge/chat-discord-blue?logo=discord)](https://discord.gg/sRqjYpEAUK)
+## Why mage?
 
-## Features
+At the very start, I made a simple proof-of-concept of this application named _WinCast_. It gave me a vision that every action could be a _spell_ casted (from the term winCast) by the user. This ended up to be named Mage, as the users are the magicians, and this tool, the useful magic wand.
 
-📦 Out of the box  
-🎯 Based on the official [template-vue-ts](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-vue-ts), less invasive  
-🌱 Extensible, really simple directory structure  
-💪 Support using Node.js API in Electron-Renderer  
-🔩 Support C/C++ native addons  
-🖥 It's easy to implement multiple windows  
+## Getting started
 
-## Quick Setup
+If you want to contribute or customize Mage, clone the repository then run the following commands:
 
 ```sh
-# clone the project
-git clone https://github.com/electron-vite/electron-vite-vue.git
-
-# enter the project directory
-cd electron-vite-vue
-
-# install dependency
-npm install
-
-# develop
-npm run dev
+npm install # Install the required dependencies
+npm run dev # Start the developement server
 ```
 
-## Debug
+Consider making a pull request if you want to suggest a change to this project.
 
-![electron-vite-react-debug.gif](https://github.com/electron-vite/electron-vite-react/blob/main/electron-vite-react-debug.gif?raw=true)
+### Building Mage
 
-## Directory
-
-```diff
-+ ├─┬ electron
-+ │ ├─┬ main
-+ │ │ └── index.ts    entry of Electron-Main
-+ │ └─┬ preload
-+ │   └── index.ts    entry of Preload-Scripts
-  ├─┬ src
-  │ └── main.ts       entry of Electron-Renderer
-  ├── index.html
-  ├── package.json
-  └── vite.config.ts
+```sh
+npm run build
 ```
 
-<!--
-## Be aware
+This will generate optimized output in the `dist/` folder which can then be packaged using Electron.
 
-🚨 By default, this template integrates Node.js in the Renderer process. If you don't need it, you just remove the option below. [Because it will modify the default config of Vite](https://github.com/electron-vite/vite-plugin-electron-renderer#config-presets-opinionated).
+## Contributing
 
-```diff
-# vite.config.ts
+We happily welcome contributions! Here are a few ways you can help:
 
-export default {
-  plugins: [
--   // Use Node.js API in the Renderer-process
--   renderer({
--     nodeIntegration: true,
--   }),
-  ],
-}
-```
--->
+-   Report bugs or issues
+-   Request new features
+-   Improve documentation
+-   Create and share plugins via **Mage Store** (coming soon)
+-   Contribute code improvements and bug fixes
 
-## FAQ
+## License
 
-- [C/C++ addons, Node.js modules - Pre-Bundling](https://github.com/electron-vite/vite-plugin-electron-renderer#dependency-pre-bundling)
-- [dependencies vs devDependencies](https://github.com/electron-vite/vite-plugin-electron-renderer#dependencies-vs-devdependencies)
+Mage is open-source and licensed under the MIT License. See the LICENSE file for more details.
+
+---
+
+Made with ❤️ by magicians who love productivity.

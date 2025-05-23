@@ -1,4 +1,4 @@
-export type IconType = "lucide-icon" | string;
+export type IconType = "lucide-icon" | "image" | string;
 
 export interface Icon {
     type: IconType;
@@ -7,7 +7,7 @@ export interface Icon {
     value?: string;
 }
 
-export type IntentType = "menu" | "widget" | "openApp" | string;
+export type IntentType = "menu" | "widget" | "openApp" | "openLink" | string;
 
 export interface Intent {
     application?: Application;
@@ -15,9 +15,10 @@ export interface Intent {
     name: string;
     type: IntentType;
     description: string;
-    src: string;
+    src?: string;
     intentScheme: string;
     appPath?: string;
+    url?: string;
     aliases: string[];
 }
 

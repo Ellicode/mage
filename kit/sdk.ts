@@ -11,12 +11,13 @@ export * from "./security";
 export * from "./storage";
 
 // Re-export UI components with proper typing
-export { default as BlankSlate } from "./BlankSlate.vue";
-export { default as Button } from "./Button.vue";
-export { default as ListItem } from "./ListItem.vue";
-export { default as SearchBar } from "./SearchBar.vue";
-export { default as SplitView } from "./SplitView.vue";
-
+export { default as BlankSlate } from "./components/BlankSlate.vue";
+export { default as Button } from "./components/Button.vue";
+export { default as ListItem } from "./components/ListItem.vue";
+export { default as SearchBar } from "./components/SearchBar.vue";
+export { default as SplitView } from "./components/SplitView.vue";
+export { default as StatusBar } from "./components/StatusBar.vue";
+export { default as KeybindAction } from "./components/KeybindAction.vue";
 /**
  * Gets relative path from app to resource
  * @param appScheme The app's scheme identifier (e.g. 'com.example.app')

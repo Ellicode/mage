@@ -35,3 +35,11 @@ export const saveNote = async (filePath: string, data: Note) => {
         "com.ellicode.notes"
     );
 };
+
+export const deleteNote = async (filePath: string, noteId: string) => {
+    await executeServerSideScript(
+        "deleteNote",
+        [filePath, noteId],
+        "com.ellicode.notes"
+    );
+};

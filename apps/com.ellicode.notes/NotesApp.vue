@@ -11,9 +11,11 @@ import {
     SearchBar,
     Button,
     SplitView,
+    StatusBar,
+    KeybindAction,
 } from "../../kit/sdk";
 import { computed, onMounted, ref } from "vue";
-import { createNote, fetchNotesFromFile, saveNote } from "./index";
+import { createNote, deleteNote, fetchNotesFromFile, saveNote } from "./index";
 import type { Note } from "./index";
 
 // Add a debounce function
@@ -104,6 +106,18 @@ const updateNoteText = (text: string) => {
     }
 };
 
+const deleteSelectedNote = async () => {
+    if (selectedNote.value) {
+        const noteId = selectedNote.value.id;
+        notes.value.splice(
+            notes.value.findIndex((note) => note.id === noteId),
+            1
+        );
+        await deleteNote("assets/notes.json", noteId);
+        selectedNote.value = null;
+    }
+};
+
 onMounted(() => {
     fetchNotes();
 });
@@ -156,7 +170,9 @@ onMounted(() => {
                 <template #icon>
                     <NotepadTextDashed class="w-10 h-10 text-neutral-500" />
                 </template>
-                <Button type="accent" @click="addNote">Create note</Button>
+                <Button accentColor="yellow" type="accent" @click="addNote"
+                    >Create note</Button
+                >
             </BlankSlate>
             <div v-else class="p-5 flex flex-col h-full">
                 <input
@@ -183,4 +199,18 @@ onMounted(() => {
             </div>
         </template>
     </SplitView>
+    <StatusBar :static="true">
+        <KeybindAction
+            name="Create note"
+            keybind="Ctrl + N"
+            @actionTriggered="addNote"
+        />
+        <div class="flex-1"></div>
+        <KeybindAction
+            name="Delete note"
+            :destructive="true"
+            keybind="Ctrl + backspace"
+            @actionTriggered="deleteSelectedNote"
+        />
+    </StatusBar>
 </template>

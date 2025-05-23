@@ -1,0 +1,32 @@
+[
+    {
+        "name": "System settings",
+        "url": "ms-settings:home",
+        "icon": "./apps/defaultAppIcons/systemSettings.png"
+    },
+    {
+        "name": "File Explorer",
+        "path": "explorer.exe",
+        "icon": "./apps/defaultAppIcons/fileExplorer.webp"
+    },
+    {
+        "name": "Microsoft Store",
+        "url": "ms-windows-store:",
+        "icon": "./apps/defaultAppIcons/microsoftStore.png"
+    },
+    {
+        "name": "Windows Terminal",
+        "path": "wt.exe",
+        "icon": "./apps/defaultAppIcons/windowsTerminal.png"
+    },
+    {
+        "name": "Task Manager",
+        "path": "taskmgr.exe",
+        "icon": "./apps/defaultAppIcons/taskManager.png"
+    },
+    {
+        "name": "Control Panel",
+        "url": "control.exe",
+        "icon": "./apps/defaultAppIcons/controlPanel.png"
+    }
+]

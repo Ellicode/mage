@@ -3,7 +3,7 @@ import { onMounted, ref, onBeforeUnmount, ComponentPublicInstance } from "vue";
 import { Application, Intent } from "./types";
 import Icon from "./components/Icon.vue";
 
-import ListItem from "../kit/ListItem.vue";
+import { ListItem } from "../kit/sdk";
 import {
     ArrowLeft,
     CircleArrowOutUpLeft,
@@ -106,7 +106,7 @@ const executeIntent = (intent: Intent) => {
     // Execute the intent based on type
     if (intent.type === "menu") {
         // Normalize the path for proper importing
-        const appPath = intent.src.replace("@/", "");
+        const appPath = intent.src?.replace("@/", "");
         const component = import(
             /* @vite-ignore */
             `../apps/${intent.application?.appScheme}/${appPath}`
@@ -128,6 +128,15 @@ const executeIntent = (intent: Intent) => {
         window.ipcRenderer.send("open-app", {
             appPath: intent.appPath,
         });
+    } else if (intent.type === "openLink") {
+        console.log("Opening link:", intent.url);
+
+        window.ipcRenderer.send("open-link", {
+            url: intent.url,
+        });
+
+        // Close the menu after opening the link
+        closeMenu();
     }
 };
 
@@ -483,14 +492,13 @@ const alertType = ref<
                     <!-- Display widget if available -->
                     <div
                         v-if="widget"
-                        class="relative p-5 max-h-30 overflow-hidden"
+                        class="relative p-5 pb-0 max-h-30 overflow-hidden"
                     >
                         <component :is="widget" :query="query" />
-                        <p class="text-neutral-500 text-sm">
-                            From {{ widgetApp?.name }}
-                        </p>
                     </div>
-
+                    <p v-if="widget" class="text-neutral-500 p-5 text-sm">
+                        From {{ widgetApp?.name }}
+                    </p>
                     <ul class="flex flex-col">
                         <ListItem
                             v-for="(result, index) in searchResults"
@@ -521,7 +529,7 @@ const alertType = ref<
                                     />
                                 </div>
                                 <img
-                                    class="w-7 h-7"
+                                    class="w-7 h-7 object-contain"
                                     v-else-if="
                                         result.application?.icon.type ===
                                         'image'
