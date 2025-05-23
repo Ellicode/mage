@@ -44,7 +44,7 @@
         "geoip-lite": "^1.4.10",
         "get-installed-apps": "^1.1.1",
         "katex": "^0.16.22",
-        "lucide-vue-next": "^0.508.0",
+        "lucide-vue-next": "^0.511.0",
         "node-geoip": "^1.0.1",
         "regedit": "^5.1.4",
         "tailwindcss": "^4.1.5",
