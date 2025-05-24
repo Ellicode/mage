@@ -35,6 +35,15 @@ npm run build
 
 This will generate optimized output in the `dist/` folder which can then be packaged using Electron.
 
+## TODO
+
+- [] Improve security
+- [] Optimize to further reduce memory usage
+- [] Add i88n (internationalization)
+- [] Support Linux and MacOS
+- [] Improve code structure and readability
+- [] Make a CLI to make the development process of plugins easier.
+
 ## Contributing
 
 We happily welcome contributions! Here are a few ways you can help:
