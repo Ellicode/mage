@@ -1,5 +1,15 @@
 # Mage 🪄
 
+![GitHub commit activity](https://img.shields.io/github/commit-activity/t/Ellicode/mage)
+![GitHub Repo stars](https://img.shields.io/github/stars/Ellicode/mage)
+![GitHub package.json dev/peer/optional dependency version](https://img.shields.io/github/package-json/dependency-version/Ellicode/mage/dev/vue?labelColor=%2335496E&color=%2342B883)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Ellicode/mage?color=orange)
+
+|                                                 |                                                 |
+| ----------------------------------------------- | ----------------------------------------------- |
+| ![Screenshot 1](./screenshots/screenshot_1.png) | ![Screenshot 1](./screenshots/screenshot_2.png) |
+| ![Screenshot 1](./screenshots/screenshot_3.png) | ![Screenshot 1](./screenshots/screenshot_4.png) |
+
 Mage, originally a [Raycast](raycast.com) clone, is a lightweight and fast launcher for Windows, built with Electron, Vite, and Vue 3. It features **custom applications**, **live activities**, **and a modern UI** and a **batteries included SDK for developers**.
 
 ## Why mage?
