@@ -10,7 +10,7 @@
 | ![Screenshot 1](./screenshots/screenshot_1.png) | ![Screenshot 1](./screenshots/screenshot_2.png) |
 | ![Screenshot 1](./screenshots/screenshot_3.png) | ![Screenshot 1](./screenshots/screenshot_4.png) |
 
-Mage, originally a [Raycast](raycast.com) clone, is a lightweight and fast launcher for Windows, built with Electron, Vite, and Vue 3. It features **custom applications**, **live activities**, **and a modern UI** and a **batteries included SDK for developers**.
+Mage, originally a [Raycast](raycast.com) clone, is a lightweight and fast app launcher for Windows, built with Electron, Vite, and Vue 3. It features **custom applications**, **live activities**, **a modern UI** and a **batteries included SDK for developers**.
 
 ## Why mage?
 
