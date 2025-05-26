@@ -5,6 +5,7 @@ import {
     ipcMain,
     globalShortcut,
     nativeImage,
+    Tray,
 } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -1000,6 +1001,8 @@ async function loadInstalledApps() {
 // Call this early in the app lifecycle
 handleDevModeShutdown();
 
+let tray = null;
+
 app.whenReady()
     .then(() => {
         globalShortcut.register("Alt+CommandOrControl+Space", () => {
@@ -1011,7 +1014,18 @@ app.whenReady()
             }
         });
     })
-    .then(createWindow);
+    .then(createWindow)
+    .then(() => {
+        tray = new Tray(
+            pathModule.join(process.env.APP_ROOT, "public", "tray-icon.png")
+        );
+        tray.setToolTip("Mage");
+        tray.on("click", () => {
+            if (win) {
+                win.webContents.send("toggle-menu", true);
+            }
+        });
+    });
 
 app.on("window-all-closed", () => {
     cleanupAndExit();
