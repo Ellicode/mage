@@ -37,12 +37,12 @@ This will generate optimized output in the `dist/` folder which can then be pack
 
 ## TODO
 
-- [] Improve security
-- [] Optimize to further reduce memory usage
-- [] Add i88n (internationalization)
-- [] Support Linux and MacOS
-- [] Improve code structure and readability
-- [] Make a CLI to make the development process of plugins easier.
+- [ ] Improve security
+- [ ] Optimize to further reduce memory usage
+- [ ] Add i88n (internationalization)
+- [ ] Support Linux and MacOS
+- [ ] Improve code structure and readability
+- [ ] Make a CLI to make the development process of plugins easier.
 
 ## Contributing
 
