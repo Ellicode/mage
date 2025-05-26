@@ -1,4 +1,4 @@
-<img src="./src/assets/images/logo-side-by-side.svg" height="48">
+<img src="./src/assets/images/Logo-side-by-side.svg" height="48">
 
 ---
 
@@ -74,4 +74,4 @@ _&copy; 2025 Ellicode inc._
 
 ---
 
-<img src="./src/assets/images/logo-side-by-side.svg" height="48">
+<img src="./src/assets/images/Logo-side-by-side.svg" height="48">
