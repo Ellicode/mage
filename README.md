@@ -12,10 +12,10 @@
 | ![Screenshot 1](./screenshots/screenshot_1.png) | ![Screenshot 1](./screenshots/screenshot_2.png) |
 | ![Screenshot 1](./screenshots/screenshot_3.png) | ![Screenshot 1](./screenshots/screenshot_4.png) |
 
-Mage, originally a [Raycast](raycast.com) clone, is a lightweight and fast app launcher for Windows, built with Electron, Vite, and Vue 3. It features **custom applications**, **live activities**, **a modern UI** and a **batteries included SDK for developers**.
+Mage, originally a [Raycast](raycast.com) clone, is a lightweight and fast app launcher for Windows, built with Electron, Vite, and Vue 3. It features **custom applications**, **live activities**, **a modern UI** and a **batteries-included SDK for developers**.
 
 > [!NOTE]  
-> Mage is still in its beta phase, and some bugs could occur. If you find one, PLEASE report it! This will make our live SO much easier, alongside with the experience of other users!
+> Mage is still in its beta phase, and some bugs could occur. If you find one, PLEASE report it! This will make our lives SO much easier, alongside with the experience of other users!
 
 ## Why mage?
 
@@ -26,7 +26,7 @@ At the very start, I made a simple proof-of-concept of this application named _W
 If you want to contribute or customize Mage, clone the repository then run the following commands:
 
 > [!IMPORTANT]  
-> To contribute to Mage, you need to follow theese requirements: LATEST VERSION OF NODE.JS, npm, and a code editor / terminal.
+> To contribute to Mage, you need to follow these requirements: LATEST VERSION OF NODE.JS, npm, and a code editor / terminal.
 
 ```sh
 npm install # Install the required dependencies
@@ -64,7 +64,7 @@ We happily welcome contributions! Here are a few ways you can help:
 
 ## License
 
-Mage is open-source and licensed under the MIT License. See the LICENSE file for more details.
+Mage is open-source and licensed under the MIT License. See the ![LICENSE](/LICENSE) file for more details.
 
 ---
 
