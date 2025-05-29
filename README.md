@@ -64,7 +64,7 @@ We happily welcome contributions! Here are a few ways you can help:
 
 ## License
 
-Mage is open-source and licensed under the MIT License. See the ![LICENSE](/LICENSE) file for more details.
+Mage is open-source and licensed under the MIT License. See the [LICENSE](/LICENSE) file for more details.
 
 ---
 
