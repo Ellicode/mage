@@ -184,7 +184,7 @@ const askLocation = async () => {
                 title="Current location"
             >
                 <template #icon>
-                    <Navigation class="w-5 h-5 text-blue-500" />
+                    <Navigation class="w-5 h-5 text-sky-500" />
                 </template>
             </ListItem>
             <ListItem
@@ -279,7 +279,7 @@ const askLocation = async () => {
                                             index
                                         ] > 0
                                     "
-                                    class="text-sm text-blue-400"
+                                    class="text-sm text-sky-400"
                                 >
                                     {{
                                         weatherData.daily
@@ -302,9 +302,9 @@ const askLocation = async () => {
                 <template #icon>
                     <Search class="w-8 h-8 text-neutral-500" />
                 </template>
-                <Button type="accent" @click="askLocation">
+                <Button accentColor="sky" type="accent" @click="askLocation">
                     <template #icon>
-                        <Navigation fill="white" class="w-4 h-4 text-white" />
+                        <Navigation fill="currentColor" class="w-4 h-4" />
                     </template>
                     Use current location
                 </Button>

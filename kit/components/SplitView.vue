@@ -7,7 +7,11 @@
         >
             <slot name="leading" />
         </div>
-        <div @mousedown="startResize" class="h-full group cursor-col-resize">
+        <div
+            @mousedown="startResize"
+            @dblclick="leadingWidth = 384"
+            class="h-full group cursor-col-resize"
+        >
             <div
                 class="w-px h-full mx-1 bg-neutral-800 group-hover:bg-neutral-500"
             ></div>

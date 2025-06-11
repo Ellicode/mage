@@ -1,79 +1,77 @@
-# electron-vite-vue
+<img src="./src/assets/images/Logo-side-by-side.svg" height="48">
 
-🥳 Really simple `Electron` + `Vue` + `Vite` boilerplate.
+---
 
-<!-- [![awesome-vite](https://awesome.re/mentioned-badge.svg)](https://github.com/vitejs/awesome-vite) -->
-<!-- [![Netlify Status](https://api.netlify.com/api/v1/badges/ae3863e3-1aec-4eb1-8f9f-1890af56929d/deploy-status)](https://app.netlify.com/sites/electron-vite/deploys) -->
-<!-- [![GitHub license](https://img.shields.io/github/license/caoxiemeihao/electron-vite-vue)](https://github.com/electron-vite/electron-vite-vue/blob/main/LICENSE) -->
-<!-- [![GitHub stars](https://img.shields.io/github/stars/caoxiemeihao/electron-vite-vue?color=fa6470)](https://github.com/electron-vite/electron-vite-vue) -->
-<!-- [![GitHub forks](https://img.shields.io/github/forks/caoxiemeihao/electron-vite-vue)](https://github.com/electron-vite/electron-vite-vue) -->
-[![GitHub Build](https://github.com/electron-vite/electron-vite-vue/actions/workflows/build.yml/badge.svg)](https://github.com/electron-vite/electron-vite-vue/actions/workflows/build.yml)
-[![GitHub Discord](https://img.shields.io/badge/chat-discord-blue?logo=discord)](https://discord.gg/sRqjYpEAUK)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/t/Ellicode/mage)
+![GitHub Repo stars](https://img.shields.io/github/stars/Ellicode/mage)
+![GitHub package.json dev/peer/optional dependency version](https://img.shields.io/github/package-json/dependency-version/Ellicode/mage/dev/vue?labelColor=%2335496E&color=%2342B883)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Ellicode/mage?color=orange)
 
-## Features
+|                                                 |                                                 |
+| ----------------------------------------------- | ----------------------------------------------- |
+| ![Screenshot 1](./screenshots/screenshot_1.png) | ![Screenshot 1](./screenshots/screenshot_2.png) |
+| ![Screenshot 1](./screenshots/screenshot_3.png) | ![Screenshot 1](./screenshots/screenshot_4.png) |
 
-📦 Out of the box  
-🎯 Based on the official [template-vue-ts](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-vue-ts), less invasive  
-🌱 Extensible, really simple directory structure  
-💪 Support using Node.js API in Electron-Renderer  
-🔩 Support C/C++ native addons  
-🖥 It's easy to implement multiple windows  
+Mage, originally a [Raycast](raycast.com) clone, is a lightweight and fast app launcher for Windows, built with Electron, Vite, and Vue 3. It features **custom applications**, **live activities**, **a modern UI** and a **batteries-included SDK for developers**.
 
-## Quick Setup
+> [!NOTE]  
+> Mage is still in its beta phase, and some bugs could occur. If you find one, PLEASE report it! This will make our lives SO much easier, alongside with the experience of other users!
+
+## Why mage?
+
+At the very start, I made a simple proof-of-concept of this application named _WinCast_. It gave me a vision that every action could be a _spell_ casted (from the term winCast) by the user. This ended up to be named Mage, as the users are the magicians, and this tool, the useful magic wand.
+
+## Getting started
+
+If you want to contribute or customize Mage, clone the repository then run the following commands:
+
+> [!IMPORTANT]  
+> To contribute to Mage, you need to follow these requirements: LATEST VERSION OF NODE.JS, npm, and a code editor / terminal.
 
 ```sh
-# clone the project
-git clone https://github.com/electron-vite/electron-vite-vue.git
-
-# enter the project directory
-cd electron-vite-vue
-
-# install dependency
-npm install
-
-# develop
-npm run dev
+npm install # Install the required dependencies
+npm run dev # Start the developement server
 ```
 
-## Debug
+Consider making a pull request if you want to suggest a change to this project.
 
-![electron-vite-react-debug.gif](https://github.com/electron-vite/electron-vite-react/blob/main/electron-vite-react-debug.gif?raw=true)
+### Building Mage
 
-## Directory
-
-```diff
-+ ├─┬ electron
-+ │ ├─┬ main
-+ │ │ └── index.ts    entry of Electron-Main
-+ │ └─┬ preload
-+ │   └── index.ts    entry of Preload-Scripts
-  ├─┬ src
-  │ └── main.ts       entry of Electron-Renderer
-  ├── index.html
-  ├── package.json
-  └── vite.config.ts
+```sh
+npm run build
 ```
 
-<!--
-## Be aware
+This will generate optimized output in the `dist/` folder which can then be packaged using Electron.
 
-🚨 By default, this template integrates Node.js in the Renderer process. If you don't need it, you just remove the option below. [Because it will modify the default config of Vite](https://github.com/electron-vite/vite-plugin-electron-renderer#config-presets-opinionated).
+## TODO
 
-```diff
-# vite.config.ts
+-   [ ] Improve security
+-   [ ] Optimize to further reduce memory usage
+-   [ ] Add i18n (internationalization)
+-   [ ] Support Linux and MacOS
+-   [ ] Improve code structure and readability
+-   [ ] Make a CLI to make the development process of plugins easier.
 
-export default {
-  plugins: [
--   // Use Node.js API in the Renderer-process
--   renderer({
--     nodeIntegration: true,
--   }),
-  ],
-}
-```
--->
+## Contributing
 
-## FAQ
+We happily welcome contributions! Here are a few ways you can help:
 
-- [C/C++ addons, Node.js modules - Pre-Bundling](https://github.com/electron-vite/vite-plugin-electron-renderer#dependency-pre-bundling)
-- [dependencies vs devDependencies](https://github.com/electron-vite/vite-plugin-electron-renderer#dependencies-vs-devdependencies)
+-   Report bugs or issues
+-   Request new features
+-   Improve documentation
+-   Create and share plugins via **Mage Store** (coming soon)
+-   Contribute code improvements and bug fixes
+
+## License
+
+Mage is open-source and licensed under the MIT License. See the [LICENSE](/LICENSE) file for more details.
+
+---
+
+Made with ❤️ by magicians who love productivity.
+
+_&copy; 2025 Ellicode inc._
+
+---
+
+<img src="./src/assets/images/Logo-side-by-side.svg" height="48">
