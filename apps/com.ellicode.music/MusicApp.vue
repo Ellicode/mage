@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from "vue";
 import { Music2, MusicIcon, Pause, Play, Rewind } from "lucide-vue-next";
-import { ListItem, SearchBar, clientProcessHandler } from "../../kit/sdk";
+import {
+    ListItem,
+    SearchBar,
+    StatusBar,
+    clientProcessHandler,
+} from "../../kit/sdk";
 import {
     toggleMusic,
     startMusic,
@@ -239,11 +244,8 @@ const filteredSongs = computed(() => {
             </template>
         </ListItem>
     </div>
-    <div
-        v-if="currentSong"
-        class="absolute z-10 flex items-center gap-2 px-5 bottom-0 w-full left-0 h-16 border-t border-t-neutral-800 bg-neutral-900/50 backdrop-blur-lg"
-    >
-        <div class="flex flex-col me-auto">
+    <StatusBar v-if="currentSong">
+        <div class="flex flex-col me-auto ms-2">
             <span>{{ currentSong.title }}</span>
             <span class="text-neutral-500 text-sm">
                 {{ currentSong.artist }}
@@ -274,7 +276,7 @@ const filteredSongs = computed(() => {
             <Rewind fill="white" class="w-5 h-5" />
         </button>
         <button
-            class="h-8 w-8 rounded-full cursor-pointer transition-all active:bg-neutral-700 active:scale-90 hover:bg-neutral-800 flex items-center justify-center"
+            class="h-8 w-8 me-2 rounded-full cursor-pointer transition-all active:bg-neutral-700 active:scale-90 hover:bg-neutral-800 flex items-center justify-center"
             @click="playpause"
         >
             <Play
@@ -288,5 +290,5 @@ const filteredSongs = computed(() => {
                 fill="white"
             />
         </button>
-    </div>
+    </StatusBar>
 </template>

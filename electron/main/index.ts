@@ -5,6 +5,7 @@ import {
     ipcMain,
     globalShortcut,
     nativeImage,
+    Tray,
 } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -68,6 +69,7 @@ import { BackgroundProcess } from "../../kit/process";
 // Array to store all background processes
 let currentProcesses: BackgroundProcess[] = [];
 let nextProcessId = 1;
+let defaultApps = [];
 
 interface InstalledApp {
     appIdentifier: string;
@@ -624,6 +626,11 @@ async function createWindow() {
                 }
             });
 
+            // Add default apps to the list
+            console.log("Default apps:", defaultApps);
+
+            allIntents = allIntents.concat(defaultApps);
+
             if (Array.isArray(installedApps)) {
                 installedApps.forEach((app) => {
                     if (app && app.name) {
@@ -742,6 +749,11 @@ async function createWindow() {
         }
     });
 
+    ipcMain.on("open-link", (event, arg) => {
+        const url = arg.url;
+        shell.openExternal(url);
+    });
+
     // Make all links open with the browser, not with the application
     win.webContents.setWindowOpenHandler(({ url }) => {
         if (url.startsWith("https:")) shell.openExternal(url);
@@ -798,6 +810,44 @@ async function loadInstalledApps() {
     }
 
     appLoadingInProgress = true;
+
+    // get from default apps
+
+    const appsFile = readFileSync(
+        pathModule.join(process.env.APP_ROOT, "apps", "defaultApps.json"),
+        "utf-8"
+    );
+    const defaultWindowsApps = JSON.parse(appsFile);
+    defaultApps = [];
+    if (Array.isArray(defaultWindowsApps)) {
+        defaultWindowsApps.forEach((app) => {
+            if (app && app.name) {
+                defaultApps.push({
+                    application: {
+                        name: app.name || "Unknown Application",
+                        description: "System Application",
+                        version: "x.x.x",
+                        author: "Microsoft corporation",
+                        appScheme:
+                            "com.system." +
+                            app.name.toLowerCase().replace(/\s+/g, "_"),
+                        icon: {
+                            type: "image",
+                            value: app.icon || null,
+                        },
+                    },
+                    name: app.name || "Unknown Application",
+                    type: app.url ? "openLink" : "openApp",
+                    description: "System Application",
+                    intentScheme:
+                        "com.system." +
+                        app.name.toLowerCase().replace(/\s+/g, "_"),
+                    url: app.url || null,
+                    appPath: app.path || null,
+                });
+            }
+        });
+    }
 
     // Create abort controller for this operation
     if (appLoadAbortController) {
@@ -951,6 +1001,8 @@ async function loadInstalledApps() {
 // Call this early in the app lifecycle
 handleDevModeShutdown();
 
+let tray = null;
+
 app.whenReady()
     .then(() => {
         globalShortcut.register("Alt+CommandOrControl+Space", () => {
@@ -962,7 +1014,18 @@ app.whenReady()
             }
         });
     })
-    .then(createWindow);
+    .then(createWindow)
+    .then(() => {
+        tray = new Tray(
+            pathModule.join(process.env.APP_ROOT, "public", "tray-icon.png")
+        );
+        tray.setToolTip("Mage");
+        tray.on("click", () => {
+            if (win) {
+                win.webContents.send("toggle-menu", true);
+            }
+        });
+    });
 
 app.on("window-all-closed", () => {
     cleanupAndExit();
